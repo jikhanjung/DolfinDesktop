@@ -429,10 +429,13 @@ class DolfinNoteWindow(QMainWindow, form_class) :
 
                 icon_pixmap = self.get_cropped_fin_image( orig_pixmap, self.current_image_index, self.current_fin_index0, False, None, {}, True ).scaledToWidth(200)
                 icon_image = icon_pixmap.toImage()
-                self.current_fin_record.items[0].setIcon(QIcon(icon_pixmap))
                 self.finicon_hash[finname] = icon_image
+                if fin_record.dolfin_id != '':
+                    icon_pixmap = self.write_finid_on_icon( icon_pixmap, fin_record.dolfin_id)
+                self.current_fin_record.items[0].setIcon(QIcon(icon_pixmap))
 
                 self.update_modification_info()
+
             elif( self.finview_mode == FV_PAN ):
                 self.finview_mode = self.prev_finview_mode
 
