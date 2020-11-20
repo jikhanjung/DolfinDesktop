@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>DolfinDetector</class>
+ <widget class="QDialog" name="DolfinDetector">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1757</width>
+    <height>871</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>DolfinDetector</string>
+  </property>
+  <widget class="QPushButton" name="btnDetectSingle">
+   <property name="geometry">
+    <rect>
+     <x>1220</x>
+     <y>830</y>
+     <width>101</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Detect Single</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="lineEdit">
+   <property name="geometry">
+    <rect>
+     <x>50</x>
+     <y>10</y>
+     <width>481</width>
+     <height>20</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="btnOpenFolder">
+   <property name="geometry">
+    <rect>
+     <x>540</x>
+     <y>10</y>
+     <width>91</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Open Folder</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="lblMainView">
+   <property name="geometry">
+    <rect>
+     <x>230</x>
+     <y>40</y>
+     <width>1161</width>
+     <height>771</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
+  <widget class="QListWidget" name="lstDetectionList">
+   <property name="geometry">
+    <rect>
+     <x>1410</x>
+     <y>40</y>
+     <width>331</width>
+     <height>431</height>
+    </rect>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>256</width>
+     <height>256</height>
+    </size>
+   </property>
+  </widget>
+  <widget class="QLabel" name="lblFinView">
+   <property name="geometry">
+    <rect>
+     <x>1410</x>
+     <y>500</y>
+     <width>331</width>
+     <height>311</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
+  <widget class="QListWidget" name="lstFileList">
+   <property name="geometry">
+    <rect>
+     <x>50</x>
+     <y>40</y>
+     <width>161</width>
+     <height>771</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QLabel" name="lblFolder">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>10</y>
+     <width>56</width>
+     <height>12</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Folder</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="lblFiles">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>40</y>
+     <width>56</width>
+     <height>12</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Files</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="lblFinList">
+   <property name="geometry">
+    <rect>
+     <x>1410</x>
+     <y>20</y>
+     <width>81</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Detected Fins</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="btnDetectAll">
+   <property name="geometry">
+    <rect>
+     <x>580</x>
+     <y>830</y>
+     <width>75</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Detect All</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="lblFinList_2">
+   <property name="geometry">
+    <rect>
+     <x>1410</x>
+     <y>480</y>
+     <width>81</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>FinView</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="btnSaveFins">
+   <property name="geometry">
+    <rect>
+     <x>1330</x>
+     <y>830</y>
+     <width>75</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Save Fins</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="btnSaveAllFins">
+   <property name="geometry">
+    <rect>
+     <x>700</x>
+     <y>830</y>
+     <width>101</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Save All Fins</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="btnSaveData">
+   <property name="geometry">
+    <rect>
+     <x>850</x>
+     <y>830</y>
+     <width>75</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Save Data</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="lblWeights">
+   <property name="geometry">
+    <rect>
+     <x>640</x>
+     <y>10</y>
+     <width>56</width>
+     <height>12</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Weights</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="edtWeights">
+   <property name="geometry">
+    <rect>
+     <x>692</x>
+     <y>10</y>
+     <width>221</width>
+     <height>20</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="btnWeights">
+   <property name="geometry">
+    <rect>
+     <x>920</x>
+     <y>10</y>
+     <width>75</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Open</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="lblImageSize">
+   <property name="geometry">
+    <rect>
+     <x>1020</x>
+     <y>10</y>
+     <width>71</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Image Size</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="edtImageSize">
+   <property name="geometry">
+    <rect>
+     <x>1100</x>
+     <y>10</y>
+     <width>113</width>
+     <height>20</height>
+    </rect>
+   </property>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
