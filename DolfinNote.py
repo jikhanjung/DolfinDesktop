@@ -19,7 +19,7 @@ from DolfinRecord import DolfinRecord, fieldnames
 import pickle
 
 fsock = open('error.log', 'w')
-sys.stderr = fsock    
+sys.stderr = fsock
 
 PROGRAM_NAME = "DolfinNote"
 PROGRAM_VERSION = "0.1.0"
@@ -31,13 +31,14 @@ FV_ADDNEWFIN = 3
 FV_NEWFIN_DRAG = 4
 FV_NOFINIMAGE = 5
 FV_PAN = 6
-FV_MODE = [ "FV_VIEW", "FV_DRAGREADY", "FV_DRAG", "FV_ADDNEWFIN", "FV_NEWFIN_DRAG", "FV_NOFINIMAGE", "FV_PAN" ]
+FV_MODE = [ "FV_VIEW", "FV_DRAGREADY", "FV_DRAG", "FV_ADDNEWFIN",
+"FV_NEWFIN_DRAG", "FV_NOFINIMAGE", "FV_PAN" ]
 
 BTN_NOT_ASSIGNED = "Not Assigned"
 BTN_NO_FIN = "No Fin"
 DEFAULT_FINID_BUTTONS = [ BTN_NOT_ASSIGNED, BTN_NO_FIN ]
 
-bbox_threshold = 5
+BBOX_THRESHOLD = 5
 red_color = QColor(255,0,0)
 green_color = QColor( 0,255,0)
 blue_color = QColor( 0,0,255)
@@ -47,6 +48,9 @@ near_cursor_bbox_color = blue_color
 ICON_VIEW = 0
 CLOSEUP_VIEW = 1
 VIEW_MODE = [ "ICON_VIEW", "CLOSEUP_VIEW" ]
+
+TOOLBUTTON_WIDTH = 100
+TOOLBUTTON_HEIGHT = 100
 
 form_class = uic.loadUiType("DolfinNote.ui")[0]
 #form_class2 = uic.loadUiType("ProgressWindow.ui")[0]
@@ -75,7 +79,7 @@ class ImageViewDlg(QWidget) :
         #self.lstFinListChanged()
         #print( self.geometry())
         #self.lblMainView.setGeometry(self.geometry())
-        if( self.parent.current_image_index >= 0):
+        if self.parent.current_image_index >= 0:
             self.parent.refresh_mainview()
 
 class ProgressDialog(QDialog):
@@ -113,8 +117,8 @@ class DolfinNoteWindow(QMainWindow, form_class) :
         self.actionSaveData.triggered.connect(self.btnSaveDataFunction)
         self.actionIconView.triggered.connect(self.setIconView)
         self.actionCloseupView.triggered.connect(self.setCloseupView)
-        self.actionExportFins.triggered.connect(self.exportFins)
-        self.actionExportYOLO.triggered.connect(self.exportYOLO)
+        self.actionExportFins.triggered.connect(self.export_fins)
+        self.actionExportYOLO.triggered.connect(self.export_YOLO)
         self.actionAbout.triggered.connect(self.about)
         self.btnMainView.clicked.connect(self.btnMainViewFunction)
         self.btnAddNewFin.clicked.connect(self.btnAddNewFinFunction)
@@ -148,7 +152,7 @@ class DolfinNoteWindow(QMainWindow, form_class) :
 
         self.view_mode = ICON_VIEW
         #self.view_mode = CLOSEUP_VIEW
-        
+
         self.trFinIDTree.currentItemChanged.connect(self.trFinIDTreeChanged)
         self.trFinIDTree.setAlternatingRowColors(True)
         self.trFinIDTree.setHeaderHidden(True)
@@ -160,7 +164,8 @@ class DolfinNoteWindow(QMainWindow, form_class) :
         self.zoom_factor = 1.0
         self.current_finbbox_coords = { 'x1': -1, 'y1': -1, 'x2': -1, 'y2': -1 }
         self.current_finview_coords = { 'x1': -1, 'y1': -1, 'x2': -1, 'y2': -1 }
-        self.bbox_color = { 'x1': QColor(255,0,0), 'x2': QColor(255,0,0), 'y1': QColor(255,0,0), 'y2': QColor(255,0,0) }
+        self.bbox_color = { 'x1': QColor(255,0,0), 'x2': QColor(255,0,0),
+                            'y1': QColor(255,0,0), 'y2': QColor(255,0,0) }
         self.begin_x = -1
         self.begin_y = -1
 
@@ -169,18 +174,10 @@ class DolfinNoteWindow(QMainWindow, form_class) :
         self.mainview_dlg = None
         self.current_modifier = ''
 
-
         self.working_folder = Path("./")
         self.widget = QWidget()
         self.vbox = QVBoxLayout()
         self.finid_base_text = 'JTA'
-
-        self.BUTTON_WIDTH = 100
-        self.BUTTON_HEIGHT = 100
-        #self.btnNoFin.resize( 75,40 )
-
-            #btn = self.add_new_button( txt )
-            #self.finid_button_hash[txt] = btn
 
         self.widget.setLayout(self.vbox)
         self.scrollArea.setWidget(self.widget)
@@ -188,11 +185,10 @@ class DolfinNoteWindow(QMainWindow, form_class) :
         self.scrollArea.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.scrollArea.setAlignment(Qt.AlignTop)
         self.vbox.setAlignment(Qt.AlignTop)
-        
+
         self.edtNewID.setText( self.finid_base_text)
         self.edtNewID.setCursorPosition( len(self.finid_base_text) )
         self.edtNewID.returnPressed.connect(self.btnNewIDFunction)
-
 
         self.current_image_index = -1
         self.current_fin_index0 = -1
@@ -253,7 +249,6 @@ class DolfinNoteWindow(QMainWindow, form_class) :
         image_height = curr_pixmap.size().height()
         widget_width = self.lblFinView.size().width()
         pic_width = self.current_finview_coords['x2'] - self.current_finview_coords['x1']
-        pic_height = self.current_finview_coords['y2'] - self.current_finview_coords['y1']
         #print("pic width:", pic_width)
         self.zoom_ratio = zoom_ratio = float( widget_width ) / float( pic_width )
         #self.lblZoomRatio.setText( str( int(self.zoom_ratio * 100)/100.0 ))
@@ -263,16 +258,15 @@ class DolfinNoteWindow(QMainWindow, form_class) :
         local_y = math.floor(event.y()/zoom_ratio)
         bbox_pos = self.current_finbbox_coords
         finview_pos = self.current_finview_coords
-        temp_bbox = {}
-        #event.type() in [ QEvent.MouseMove, QEvent.MouseButtonPress, QEvent.MouseButtonRelease ] 
+        #event.type() in [ QEvent.MouseMove, QEvent.MouseButtonPress, QEvent.MouseButtonRelease ]
 
         if( event.type() == QEvent.MouseButtonPress and event.buttons() == Qt.LeftButton ):
             self.begin_x = local_x + finview_pos['x1']
             self.begin_y = local_y + finview_pos['y1']
-            if( self.finview_mode == FV_DRAGREADY ):
+            if self.finview_mode == FV_DRAGREADY:
                 #print("from dragready to drag")
                 self.finview_mode = FV_DRAG
-            elif( self.finview_mode == FV_ADDNEWFIN ):
+            elif self.finview_mode == FV_ADDNEWFIN:
                 #print("from addnewfin to newfin drag")
                 self.finview_mode = FV_NEWFIN_DRAG
                 #print( "bbox", bbox_pos )
@@ -291,10 +285,9 @@ class DolfinNoteWindow(QMainWindow, form_class) :
             x_move = local_x - self.begin_x
             y_move = local_y - self.begin_y
             #print( "xy move", x_move, y_move, "pic wh", pic_width, pic_height)
-            no_move = False
             if 'x1' in self.current_finbbox_coords.keys():
                 if self.current_finview_coords['x1'] > self.current_finbbox_coords['x1'] + x_move:
-                    x_move = self.current_finview_coords['x1'] - self.current_finbbox_coords['x1'] 
+                    x_move = self.current_finview_coords['x1'] - self.current_finbbox_coords['x1']
                 if self.current_finview_coords['x2'] < self.current_finbbox_coords['x2'] + x_move:
                     x_move = self.current_finbbox_coords['x2'] - self.current_finview_coords['x2']
                 if self.current_finview_coords['y1'] > self.current_finbbox_coords['y1'] + y_move:
@@ -312,19 +305,18 @@ class DolfinNoteWindow(QMainWindow, form_class) :
                 y_move = image_height - self.current_finview_coords['y2']
 
             self.pan_delta_x += x_move
-            self.pan_delta_y += y_move 
+            self.pan_delta_y += y_move
             self.begin_x = local_x
             self.begin_y = local_y
-            
 
-        elif( event.type() == QEvent.MouseMove and self.finview_mode in [ FV_ADDNEWFIN, FV_NOFINIMAGE ]):
+        elif event.type() == QEvent.MouseMove and self.finview_mode in [FV_ADDNEWFIN,FV_NOFINIMAGE]:
             #print("mouse move in addnewfin")
-            if( self.finview_mode == FV_ADDNEWFIN ):
+            if self.finview_mode == FV_ADDNEWFIN:
                 self.lblFinView.setCursor( Qt.CrossCursor )
 
             self.temp_bbox = None
             #print( zoom_ratio, local_x, local_y, self.current_finview_coords )
-                
+
         elif( event.type() == QEvent.MouseMove and self.finview_mode in [ FV_NEWFIN_DRAG  ] ):
             #print("mouse move in newfin drag")
             x1, x2 = self.begin_x, finview_pos['x1'] + local_x
@@ -333,10 +325,11 @@ class DolfinNoteWindow(QMainWindow, form_class) :
                 x1, x2 = x2, x1
             if y1 > y2:
                 y1, y2 = y2, y1
-            self.temp_bbox = { 'x1': max( x1, 0 ), 'y1': max( y1, 0 ), 'x2':min( x2, image_width ), 'y2':min( y2, image_height ) }
+            self.temp_bbox = { 'x1': max( x1, 0 ), 'y1': max( y1, 0 ),
+                               'x2':min( x2, image_width ), 'y2':min( y2, image_height ) }
 
         elif( event.type() == QEvent.MouseMove and self.finview_mode in [ FV_VIEW, FV_DRAGREADY ] ):
-                
+
             #print("mouse move in view or dragready mode")
             #check cursor-bbox distance
             dist = {}
@@ -344,34 +337,38 @@ class DolfinNoteWindow(QMainWindow, form_class) :
             #print(self.current_image_index, self.current_fin_index0 )
             #print( )
             pos_to_move = []
-            dist['x1'] = abs( bbox_pos['x1'] - ( local_x + finview_pos['x1'] ) )
-            dist['x2'] = abs( ( bbox_pos['x2'] ) - ( local_x + finview_pos['x1'] ) )
-            dist['y1'] = abs( bbox_pos['y1'] - ( local_y + finview_pos['y1'] ) )
-            dist['y2'] = abs( ( bbox_pos['y2'] ) - ( local_y + finview_pos['y1'] ) )
-            if( dist['x1'] <= dist['x2'] ):
+            x_pos = local_x + finview_pos['x1']
+            y_pos = local_y + finview_pos['y1']
+            dist['x1'] = abs( bbox_pos['x1'] - x_pos )
+            dist['x2'] = abs( bbox_pos['x2'] - x_pos )
+            dist['y1'] = abs( bbox_pos['y1'] - y_pos )
+            dist['y2'] = abs( bbox_pos['y2'] - y_pos )
+            if dist['x1'] <= dist['x2']:
                 min_x = 'x1'
             else:
                 min_x = 'x2'
-            if( dist['y1'] <= dist['y2'] ):
+            if dist['y1'] <= dist['y2']:
                 min_y = 'y1'
             else:
                 min_y = 'y2'
 
-            if dist[min_x] < bbox_threshold:
+            if dist[min_x] < BBOX_THRESHOLD and \
+                (bbox_pos['y1'] - BBOX_THRESHOLD) < y_pos < (bbox_pos['y2']+BBOX_THRESHOLD):
                 pos_to_move.append(min_x)
-            if dist[min_y] < bbox_threshold:
+            if dist[min_y] < BBOX_THRESHOLD and \
+                (bbox_pos['x1'] - BBOX_THRESHOLD) < x_pos < (bbox_pos['x2']+BBOX_THRESHOLD):
                 pos_to_move.append(min_y)
-            
-            if( len( pos_to_move ) > 0 ):
+
+            if len(pos_to_move) > 0:
                 self.finview_mode = FV_DRAGREADY
                 self.pos_to_move = pos_to_move
-                if( len( self.pos_to_move ) == 1 ) :
+                if len( self.pos_to_move ) == 1:
                     if self.pos_to_move[0][0] == 'x':
                         self.lblFinView.setCursor( Qt.SizeHorCursor )
                     else:
                         self.lblFinView.setCursor( Qt.SizeVerCursor )
                 else:
-                    if( self.pos_to_move[0][1] == self.pos_to_move[1][1] ):
+                    if self.pos_to_move[0][1] == self.pos_to_move[1][1]:
                         self.lblFinView.setCursor( Qt.SizeFDiagCursor )
                     else:
                         self.lblFinView.setCursor( Qt.SizeBDiagCursor )
@@ -391,23 +388,23 @@ class DolfinNoteWindow(QMainWindow, form_class) :
             diff = {}
             diff['x'] = finview_pos['x1'] + local_x - self.begin_x
             diff['y'] = finview_pos['y1'] + local_y - self.begin_y
-            #print("in drag mode ["+self.nearby_bbox_line+"] from ("+str(self.begin_x)+","+str(self.begin_y)+")")
-            if( len( self.pos_to_move ) > 0 ):
+
+            if len( self.pos_to_move ) > 0:
                 self.temp_bbox = {}
-                for k in bbox_pos.keys():
-                    self.temp_bbox[k] = bbox_pos[k]
+                for k, v in bbox_pos.items():
+                    self.temp_bbox[k] = v
                 for k in self.pos_to_move:
                     self.temp_bbox[k] += diff[k[0]]
 
                 # sanity check
                 self.temp_bbox['x1'] = max( self.temp_bbox['x1'], finview_pos['x1'] )
                 self.temp_bbox['y1'] = max( self.temp_bbox['y1'], finview_pos['y1'] )
-                self.temp_bbox['x2'] = min( self.temp_bbox['x2'], finview_pos['x2'] -1 )
+                self.temp_bbox['x2'] = min( self.temp_bbox['x2'], finview_pos['x2'] -1)
                 self.temp_bbox['y2'] = min( self.temp_bbox['y2'], finview_pos['y2'] -1)
 
-        elif( event.type() == QEvent.MouseButtonRelease ):
+        elif event.type() == QEvent.MouseButtonRelease:
             #print("mouse release")
-            if( self.finview_mode == FV_DRAG ):
+            if self.finview_mode == FV_DRAG:
                 #print("mode was drag")
                 self.finview_mode = FV_VIEW
                 self.begin_x = -1
@@ -417,13 +414,15 @@ class DolfinNoteWindow(QMainWindow, form_class) :
                 orig_pixmap = self.orig_pixmap_list[self.current_image_index]
                 image_width = orig_pixmap.size().width()
                 image_height = orig_pixmap.size().height()
-                self.current_fin_record.center_x = ( float( self.temp_bbox['x1'] + self.temp_bbox['x2'] ) / 2.0 ) / image_width
-                self.current_fin_record.center_y = ( float( self.temp_bbox['y1'] + self.temp_bbox['y2'] ) / 2.0 ) / image_height
-                self.current_fin_record.width = float( self.temp_bbox['x2'] - self.temp_bbox['x1'] ) / image_width
-                self.current_fin_record.height = float( self.temp_bbox['y2'] - self.temp_bbox['y1'] ) / image_height
-                self.temp_bbox = None
+                bbox = self.temp_bbox
 
                 fin_record = self.current_fin_record
+                fin_record.center_x = ( float( bbox['x1'] + bbox['x2'] ) / 2.0 ) / image_width
+                fin_record.center_y = ( float( bbox['y1'] + bbox['y2'] ) / 2.0 ) / image_height
+                fin_record.width = float( bbox['x2'] - bbox['x1'] ) / image_width
+                fin_record.height = float( bbox['y2'] - bbox['y1'] ) / image_height
+                self.temp_bbox = None
+
                 fin_index0 = fin_record.fin_index - 1
                 finname = fin_record.get_finname()
 
@@ -436,10 +435,10 @@ class DolfinNoteWindow(QMainWindow, form_class) :
 
                 self.update_modification_info()
 
-            elif( self.finview_mode == FV_PAN ):
+            elif self.finview_mode == FV_PAN:
                 self.finview_mode = self.prev_finview_mode
 
-            elif( self.finview_mode == FV_NEWFIN_DRAG ):
+            elif self.finview_mode == FV_NEWFIN_DRAG:
                 #print("newfin drag")
                 #QApplication.restoreOverrideCursor()
                 self.finview_mode = FV_VIEW
@@ -451,13 +450,11 @@ class DolfinNoteWindow(QMainWindow, form_class) :
                 image_width = orig_pixmap.size().width()
                 image_height = orig_pixmap.size().height()
                 prev_fin_record = self.current_fin_record
-                
+
                 fin_record = DolfinRecord()
                 fin_record.set_info( prev_fin_record.get_info() )
 
                 if fin_record.confidence < 0  :
-                    fin_count -= 1
-                    #self.lstFinList.takeItem( fin_count )
                     self.all_image_fin_list[image_index] = []
                     self.finModel.removeRow( self.current_item.row() )
                     del self.finicon_hash[fin_record.get_finname()]
@@ -474,11 +471,12 @@ class DolfinNoteWindow(QMainWindow, form_class) :
                 fin_record.dolfin_id = ''
                 fin_record.modified_on = ''
                 fin_record.modified_by = ''
-                fin_record.center_x = ( float( self.temp_bbox['x1'] + self.temp_bbox['x2'] ) / 2.0 ) / image_width
-                fin_record.center_y = ( float( self.temp_bbox['y1'] + self.temp_bbox['y2'] ) / 2.0 ) / image_height
-                fin_record.width = float( self.temp_bbox['x2'] - self.temp_bbox['x1'] ) / image_width
-                fin_record.height = float( self.temp_bbox['y2'] - self.temp_bbox['y1'] ) / image_height
-                self.zoom_ratio = float( widget_width ) / float( self.temp_bbox['x2'] - self.temp_bbox['x1'] )
+                bbox = self.temp_bbox
+                fin_record.center_x = (float(bbox['x1']+bbox['x2'])/2.0)/image_width
+                fin_record.center_y = (float(bbox['y1']+bbox['y2'])/2.0)/image_height
+                fin_record.width = float(bbox['x2']-bbox['x1'])/image_width
+                fin_record.height = float(bbox['y2']-bbox['y1'])/image_height
+                self.zoom_ratio = float(widget_width)/float(bbox['x2']-bbox['x1'])
                 #print( "zoom ratio:", self.zoom_ratio)
                 self.temp_bbox = None
                 #self.zoom_ratio = zoom_ratio = float( widget_width ) / float( pic_width )
@@ -517,9 +515,9 @@ class DolfinNoteWindow(QMainWindow, form_class) :
 
     def eventFilter(self, source, event):
         #print( event.type(), source)
-        if( event.type() in [ QEvent.MouseMove, QEvent.MouseButtonPress, QEvent.MouseButtonRelease ] ):
-            if( source == self.lblFinView ):
-                if( self.current_image_index < 0):
+        if event.type() in [ QEvent.MouseMove, QEvent.MouseButtonPress, QEvent.MouseButtonRelease ]:
+            if source == self.lblFinView:
+                if self.current_image_index < 0:
                     return QMainWindow.eventFilter(self, source, event)
                 self.finview_mouse_event(event)
         #elif( event.type() in [ QEvent.Wheel ] ):
@@ -535,16 +533,16 @@ class DolfinNoteWindow(QMainWindow, form_class) :
         msg.setWindowTitle("Information")
         msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
         #msg.show()
-        #msg.setDetailedText("The details are as follows:")        
-        retval = msg.exec_()
+        #msg.setDetailedText("The details are as follows:")
+        msg.exec_()
         #print( "value of pressed message box button:", retval)
-	
+
     #def msgbtn(i):
         #print( "Button pressed is:",i.text() )
-    def exportFins(self):
+    def export_fins(self):
         self.messageBox( "Export Fins function will be here someday.")
 
-    def exportYOLO(self):
+    def export_YOLO(self):
         self.messageBox( "Export YOLO function will be here someday.")
 
     def about(self):
@@ -563,12 +561,10 @@ class DolfinNoteWindow(QMainWindow, form_class) :
                     self.btnIconZoomOutFunction()
                 #print("control")
         else:
-            prev_zoom_factor = self.zoom_factor
             zf = 1.0 + (angle_delta / 8.0) * 0.01
 
             curr_pixmap = self.orig_pixmap_list[self.current_image_index]
             image_width = curr_pixmap.size().width()
-            image_height = curr_pixmap.size().height()
             widget_width = self.lblFinView.size().width()
             pic_width = self.current_finview_coords['x2'] - self.current_finview_coords['x1']
             if pic_width == image_width and zf < 1:
@@ -581,7 +577,7 @@ class DolfinNoteWindow(QMainWindow, form_class) :
             elif self.zoom_factor > 1.5:
                 self.zoom_factor = 1.5
 
-            self.zoom_ratio = zoom_ratio = float( widget_width ) / float( pic_width )
+            self.zoom_ratio = float( widget_width ) / float( pic_width )
             self.refresh_finview()
 
 
@@ -590,7 +586,7 @@ class DolfinNoteWindow(QMainWindow, form_class) :
 
     def mouseMoveEvent(self, e):
         #print( e.x(), e.y() )
-        if( self.current_fin_index0 < 0):
+        if self.current_fin_index0 < 0:
             return
 
         curr_x = e.x() - self.stackedWidget.pos().x()
@@ -618,7 +614,7 @@ class DolfinNoteWindow(QMainWindow, form_class) :
 
     def resizeEvent(self,e):
         self.refresh_finview()
-        if( self.current_image_index >= 0):
+        if self.current_image_index >= 0:
             self.refresh_mainview()
 
     def get_fit_pixmap_to_view( self, pixmap, view, zoom_ratio = -1 ):
@@ -628,38 +624,39 @@ class DolfinNoteWindow(QMainWindow, form_class) :
         view_wh_ratio = view_width / view_height
         pixmap_wh_ratio = pixmap.width() / pixmap.height()
 
-        if( view_wh_ratio < pixmap_wh_ratio ):
+        if view_wh_ratio < pixmap_wh_ratio:
             #self.zoom_ratio = int(view_width / pixmap.width() )
-            if( zoom_ratio > 0 ):
+            if zoom_ratio > 0:
                 final_pixmap = pixmap.scaledToWidth( int( pixmap.width() * zoom_ratio * 0.1 ) )
             else:
                 final_pixmap = pixmap.scaledToWidth(view_width)
-        else: 
-            if( zoom_ratio > 0 ):
+        else:
+            if zoom_ratio > 0:
                 final_pixmap = pixmap.scaledToWidth( int( pixmap.height() * zoom_ratio * 0.1 ) )
             #self.zoom_ratio = int( view_height / pixmap.height() )
             else:
                 final_pixmap = pixmap.scaledToHeight(view_height)
         #print( "zoom factor:", self.zoom_ratio)
-        
+
         return final_pixmap
 
     def btnAddNewFinFunction(self):
-        if( self.current_image_index < 0 ):
+        if self.current_image_index < 0:
             return
         self.current_fin_index0 = -1
         self.zoom_factor = 1.0
-        pixmap = self.get_fit_pixmap_to_view( self.orig_pixmap_list[self.current_image_index], self.lblFinView )
-        w = self.orig_pixmap_list[self.current_image_index].size().width()
-        h = self.orig_pixmap_list[self.current_image_index].size().height()
-        self.current_finview_coords = { 'x1': 0, 'y1': 0, 'x2': w, 'y2': h }
+        pixmap = self.orig_pixmap_list[self.current_image_index]
+        pixmap=self.get_fit_pixmap_to_view(pixmap,self.lblFinView )
+        pixmap_width = self.orig_pixmap_list[self.current_image_index].size().width()
+        pixmap_height = self.orig_pixmap_list[self.current_image_index].size().height()
+        self.current_finview_coords = { 'x1': 0, 'y1': 0, 'x2': pixmap_width, 'y2': pixmap_height }
         self.lblFinView.setPixmap( pixmap )
         self.finview_mode = FV_ADDNEWFIN
         #print("finview mode now add new fin")
         #self.prev_finlist_index = self.lstFinList.currentRow()
 
     def btnMainViewFunction(self):
-        if( self.mainview_dlg == None ):
+        if self.mainview_dlg == None:
             self.mainview_dlg = ImageViewDlg()
             self.mainview_dlg.parent = self
             self.mainview_dlg.show()
@@ -670,7 +667,7 @@ class DolfinNoteWindow(QMainWindow, form_class) :
     def refresh_mainview(self):
         #print( "pixmap 0:", self.orig_pixmap_list[image_index] )
         image_index = self.current_image_index
-        if( self.orig_pixmap_list[image_index] == None):
+        if self.orig_pixmap_list[image_index] == None:
             self.orig_pixmap_list[image_index] = QPixmap(self.image_path_list[image_index])
 
         pixmap = self.orig_pixmap_list[image_index].copy()
@@ -678,7 +675,7 @@ class DolfinNoteWindow(QMainWindow, form_class) :
         view_list = []
 
         view_list.append( self.lblMainView )
-        if( self.mainview_dlg != None ):
+        if self.mainview_dlg != None:
             view_list.append( self.mainview_dlg.lblMainView )
 
         #print("pixmap 1:", pixmap)
@@ -694,24 +691,24 @@ class DolfinNoteWindow(QMainWindow, form_class) :
             pixmap_height = l_pixmap.height()
 
             for fin_record in self.all_image_fin_list[image_index]:
-                cls, x, y, w, h, conf = fin_record.get_detection_info()
-                if( conf > 0 ):
-                    fin_index = fin_record.fin_index 
+                l_cls, l_x, l_y, l_w, l_h, l_conf = fin_record.get_detection_info()
+                if l_conf > 0:
+                    fin_index = fin_record.fin_index
                     #print( cls, x, y, w, h )
-                    w = float(w)
-                    h = float(h)
+                    l_w = float(l_w)
+                    l_h = float(l_h)
 
-                    center_x = round( float(x) * pixmap_width )
-                    center_y = round( float(y) * pixmap_height )
-                    w = bbox_width = round( w * pixmap_width )
-                    h = bbox_height = round( h * pixmap_height )
-                    x = center_x - int( bbox_width / 2 ) 
-                    y = center_y - int( bbox_height / 2 ) 
+                    center_x = round( float(l_x) * pixmap_width )
+                    center_y = round( float(l_y) * pixmap_height )
+                    l_w = bbox_width = round( l_w * pixmap_width )
+                    l_h = bbox_height = round( l_h * pixmap_height )
+                    l_x = center_x - int( bbox_width / 2 )
+                    l_y = center_y - int( bbox_height / 2 )
 
                     l_text = "#"+str( fin_index )
                     text_height = 15
-                    l_painter.drawRect( x, y, w, h )
-                    l_painter.drawText( x, y-2, l_text)
+                    l_painter.drawRect( l_x, l_y, l_w, l_h )
+                    l_painter.drawText( l_x, l_y-2, l_text)
 
             l_painter.end()
             view.setPixmap(l_pixmap)
@@ -722,7 +719,7 @@ class DolfinNoteWindow(QMainWindow, form_class) :
         if event.key() == Qt.Key_Up:
             self.edtDolfinIDEditFinishedFunction()
             self.btnPrevFinFunction()
-        elif event.key() == Qt.Key_Down:  
+        elif event.key() == Qt.Key_Down:
             self.edtDolfinIDEditFinishedFunction()
             self.btnNextFinFunction()
         elif event.key() == Qt.Key_Plus and numpad_mod:
@@ -732,18 +729,16 @@ class DolfinNoteWindow(QMainWindow, form_class) :
             #print("numpad minus")
             self.btnIconZoomOutFunction()
         return
-        #elif event.key() == Qt.Key_1 and event.modifiers() & Qt.AltModifier: 
+        #elif event.key() == Qt.Key_1 and event.modifiers() & Qt.AltModifier:
         #    #print('Alt 1')
         #    self.setIconView()
-        #elif event.key() == Qt.Key_2 and event.modifiers() & Qt.AltModifier: 
+        #elif event.key() == Qt.Key_2 and event.modifiers() & Qt.AltModifier:
         #    #print('Alt 2')
         #    self.setCloseupView()
-        #elif event.key() == Qt.Key_S and event.modifiers() & Qt.ControlModifier: 
+        #elif event.key() == Qt.Key_S and event.modifiers() & Qt.ControlModifier:
         #    #print('Alt 2')
         #    self.btnSaveDataFunction()
-
-
-        #self.up()    
+        #self.up()
 
     def btnPrevFinFunction(self):
         index = self.lstFinList2.currentIndex()
@@ -752,7 +747,7 @@ class DolfinNoteWindow(QMainWindow, form_class) :
         #print(index)
         curr_row = index.row()
         #print(curr_row)
-        if( curr_row == 0 ):
+        if curr_row == 0:
             return
         prev_index = index.model().sibling(curr_row-1,0,index)
         #print(prev_index.row())
@@ -767,7 +762,7 @@ class DolfinNoteWindow(QMainWindow, form_class) :
         curr_row = index.row()
         rowcount = index.model().rowCount()
         #print(curr_row, rowcount)
-        if( curr_row == rowcount - 1):
+        if curr_row == rowcount - 1:
             return
 
         next_index = index.model().sibling(curr_row+1,0,index)
@@ -798,10 +793,10 @@ class DolfinNoteWindow(QMainWindow, form_class) :
 
     def filter_finlist( self, text ):
         #print( "filter:", text)
-        if( text == 'All'):
+        if text == 'All':
             self.proxyModel.setFilterRegExp(QRegExp('', Qt.CaseInsensitive,QRegExp.FixedString))
             self.proxyModel.setFilterKeyColumn(1)
-        elif( text == BTN_NOT_ASSIGNED):
+        elif text == BTN_NOT_ASSIGNED:
             # find fins without whitespace
             #self.proxyModel
             self.proxyModel.setFilterRegExp(QRegExp('^$', Qt.CaseInsensitive,QRegExp.RegExp))
@@ -814,7 +809,7 @@ class DolfinNoteWindow(QMainWindow, form_class) :
     def update_toolbutton_icon(self,fin_id):
         #print("update tool button", fin_id)
         btn = self.finid_info[fin_id]['button']
-        fin_record_hash = self.finid_info[fin_id]['fin_record_hash'] 
+        fin_record_hash = self.finid_info[fin_id]['fin_record_hash']
         finname_list = self.finid_info[fin_id]['finname_list']
         #print( fin_record_hash )
         #print( finname_list )
@@ -826,7 +821,7 @@ class DolfinNoteWindow(QMainWindow, form_class) :
         else:
             finname = finname_list[-1]
             item1, item2 = fin_record_hash[finname].items
-            button_icon = self.make_toolbutton_icon( fin_id, QIcon(QPixmap(self.finicon_hash[finname])) )
+            button_icon=self.make_toolbutton_icon(fin_id,QIcon(QPixmap(self.finicon_hash[finname])))
             self.finid_info[fin_id]['button'].setIcon( item1.icon() )
             #self.finid_button_hash[btn_id].setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
             self.finid_info[fin_id]['button'].setIconSize(QSize(92,92))
@@ -927,12 +922,12 @@ class DolfinNoteWindow(QMainWindow, form_class) :
             return
 
         btn = self.add_new_finid_info(new_id)
-        
+
         self.edtNewID.setText( self.finid_base_text)
         self.edtNewID.setCursorPosition( len(self.finid_base_text) )
 
     def btnOpenFolderFunction(self):
-        dir = QFileDialog.getExistingDirectory(self, 'Open directory', str(self.working_folder.parent))
+        dir=QFileDialog.getExistingDirectory(self,'Open directory',str(self.working_folder.parent))
 
         QApplication.setOverrideCursor(Qt.WaitCursor)
         self.edtFolder.setText(dir)
@@ -960,12 +955,12 @@ class DolfinNoteWindow(QMainWindow, form_class) :
             images = [x for x in files if os.path.splitext(x)[-1].lower() in img_formats]
 
             #print("images:", images )
-            self.progressDlg = ProgressDialog()
-            self.progressDlg.setModal(True)
-            self.progressDlg.lblText.setText("Loading 0 of " + str( len( images ) ) + " image files...")
-            self.progressDlg.pbProgress.setValue( 0 ) 
-            self.progressDlg.show()
-
+            self.progress_dialog = ProgressDialog()
+            self.progress_dialog.setModal(True)
+            label_text = "Loading 0 of {} image files...".format(len(images))
+            self.progress_dialog.lblText.setText(label_text)
+            self.progress_dialog.pbProgress.setValue(0)
+            self.progress_dialog.show()
 
             i = 0
             for img in images:
@@ -981,7 +976,7 @@ class DolfinNoteWindow(QMainWindow, form_class) :
 
             csv_path = self.working_folder.joinpath( self.working_folder.name + ".csv" )
             icondb_path = self.working_folder.joinpath( self.working_folder.name + ".icondb" )
-            if( not csv_path.exists() ):
+            if not csv_path.exists():
                 self.working_folder = ''
                 return
 
@@ -1011,27 +1006,29 @@ class DolfinNoteWindow(QMainWindow, form_class) :
                         pixmap = None
                         prev_image_name = image_name
                         i += 1
-                        self.progressDlg.pbProgress.setValue( int( ( i / float(len(images)) ) * 100 ) ) 
-                        self.progressDlg.lblText.setText("Loading " + str( i ) + " of " + str( len( images ) ) + " image files...")
-                        self.progressDlg.update()
-                        QApplication.processEvents() 
-
+                        label_text = "Loading {} of {} image files...".format(i,len(images))
+                        self.progress_dialog.pbProgress.setValue(int((i/float(len(images)))*100))
+                        self.progress_dialog.lblText.setText( label_text )
+                        self.progress_dialog.update()
+                        QApplication.processEvents()
 
                     fin_record  = DolfinRecord( row )
                     self.all_image_fin_list[image_index].append( fin_record )
 
-                    if( fin_record.image_width == 0 ):
+                    if fin_record.image_width == 0:
                         image_width, image_height = imagesize.get(str(image_path))
                         #print(width, height)
                         fin_record.image_width = image_width
                         fin_record.image_height = image_height
-                    
+
                     if fin_record.dolfin_id != '':
                         if fin_record.dolfin_id not in self.finid_info.keys():
                             self.add_new_finid_info(fin_record.dolfin_id)
 
                     fin_index0 = int(row['fin_index']) - 1
-                    old_iconfile_name = "{}_{:02d}.JPG".format( Path( fin_record.image_name ).stem, int( fin_record.fin_index ) ) 
+                    image_name_stem = Path(fin_record.image_name).stem
+                    fin_index = int(fin_record.fin_index)
+                    old_iconfile_name = "{}_{:02d}.JPG".format( image_name_stem, fin_index)
                     finname = fin_record.get_finname()
                     iconfile_name = finname + ".JPG"
 
@@ -1077,9 +1074,9 @@ class DolfinNoteWindow(QMainWindow, form_class) :
                     self.finModel.appendRow(  fin_record.items )
                     self.lstFinList.update()
                     self.update()
-                    QApplication.processEvents() 
+                    QApplication.processEvents()
 
-            self.progressDlg.close()
+            self.progress_dialog.close()
 
         QApplication.restoreOverrideCursor()
 
@@ -1117,7 +1114,7 @@ class DolfinNoteWindow(QMainWindow, form_class) :
             finname = current_item.text()
             fin_record = self.fin_record_hash[finname]
             self.current_fin_record = fin_record
-            #self.current_item = 
+            #self.current_item =
             #print("item text:", item_text)
             #print("fin_record:", fin_record)
 
@@ -1151,8 +1148,7 @@ class DolfinNoteWindow(QMainWindow, form_class) :
             image_index = self.image_path_list.index( image_path)
             fin_index0 = self.current_fin_index0 = 0
             fin_record = self.current_fin_record = self.all_image_fin_list[image_index][fin_index0]
-            #pixmap = self.get_fit_pixmap_to_view( self.orig_pixmap_list[self.current_image_index], self.lblFinView )
-            if( self.orig_pixmap_list[image_index] == None ):
+            if self.orig_pixmap_list[image_index] == None:
                 self.orig_pixmap_list[image_index] = QPixmap(str(image_path))
             w = self.orig_pixmap_list[image_index].size().width()
             h = self.orig_pixmap_list[image_index].size().height()
@@ -1164,29 +1160,29 @@ class DolfinNoteWindow(QMainWindow, form_class) :
         #print("imagename:", image_name)
         #print(image_path)
 
-        if( self.current_image_index != image_index ): # new image
+        if self.current_image_index != image_index: # new image
             self.current_image_index = image_index
-            if( self.orig_pixmap_list[image_index] == None ):
+            if self.orig_pixmap_list[image_index] == None:
                 self.orig_pixmap_list[image_index] = QPixmap(str(image_path))
             self.refresh_mainview()
 
         self.refresh_finview()
         self.reset_input_fields()
 
-        if( fin_record != None ):
-
+        if fin_record != None:
             #기타 field 작업
             self.edtImageName.setText(str(fin_record.image_name))
             self.edtFinIndex.setText(str(fin_record.fin_index))
             self.edtConfidence.setText(str(fin_record.confidence))
             #print("is fin", fin_record.is_fin)
-            if( fin_record.is_fin ):
+            if fin_record.is_fin:
                 self.rbIsFinYes.setChecked(True)
                 self.rbIsFinNo.setChecked(False)
             else:
                 self.rbIsFinYes.setChecked(False)
                 self.rbIsFinNo.setChecked(True)
-            self.edtImageDateTime.setDateTime(QDateTime.fromString(fin_record.image_datetime,"yyyy-MM-dd hh:mm:ss"))
+            image_datetime = QDateTime.fromString(fin_record.image_datetime,"yyyy-MM-dd hh:mm:ss")
+            self.edtImageDateTime.setDateTime(image_datetime)
             self.edtLocation.setText(str(fin_record.location))
             self.edtLatitude.setText(str(fin_record.latitude))
             self.edtLongitude.setText(str(fin_record.longitude))
@@ -1194,9 +1190,11 @@ class DolfinNoteWindow(QMainWindow, form_class) :
             self.edtDolfinID.setText(str(fin_record.dolfin_id))
             self.edtObservedBy.setText(str(fin_record.observed_by))
             self.edtCreatedBy.setText(str(fin_record.created_by))
-            self.edtCreatedOn.setDateTime(QDateTime.fromString(fin_record.created_on,"yyyy-MM-dd hh:mm:ss"))
+            cr_datetime = QDateTime.fromString(fin_record.created_on,"yyyy-MM-dd hh:mm:ss")
+            self.edtCreatedOn.setDateTime(cr_datetime)
             self.edtModifiedBy.setText(str(fin_record.modified_by))
-            self.edtModifiedOn.setDateTime(QDateTime.fromString(fin_record.modified_on,"yyyy-MM-dd hh:mm:ss"))
+            mo_datetime = QDateTime.fromString(fin_record.modified_on,"yyyy-MM-dd hh:mm:ss")
+            self.edtModifiedOn.setDateTime(mo_datetime)
 
             wasBlocked = self.edtComment.blockSignals(True)
             self.edtComment.setPlainText(fin_record.comment)
@@ -1216,16 +1214,16 @@ class DolfinNoteWindow(QMainWindow, form_class) :
         finview = {}
         fin_record = None
 
-        if( fin_index0 >= 0 ):
+        if fin_index0 >= 0:
             fin_record = self.all_image_fin_list[image_index][fin_index0]
 
-        if( fin_index0 >= 0 and fin_record.confidence > 0 ):
+        if fin_index0 >= 0 and fin_record.confidence > 0:
             cls, center_x, center_y, fin_width, fin_height, conf = fin_record.get_detection_info()
 
             finbbox['width'] = int( fin_width * orig_width )
             finbbox['height'] = int( fin_height * orig_height )
             if square == True:
-                finbbox['width'] = max( int( fin_width * orig_width ), int( fin_height * orig_height ) )
+                finbbox['width'] = max(int(fin_width*orig_width),int(fin_height*orig_height))
                 finbbox['height'] = finbbox['width']
             finbbox['x1'] = int( center_x * orig_width - ( finbbox['width'] / 2 ) )
             finbbox['y1'] = int( center_y * orig_height - ( finbbox['height']  / 2 ) )
@@ -1245,23 +1243,23 @@ class DolfinNoteWindow(QMainWindow, form_class) :
                 widget_height = widget.size().height()
                 widget_wh_ratio = widget_width / widget_height
                 rect_wh_ratio = finbbox['width'] / finbbox['height']
-                if( widget_wh_ratio < rect_wh_ratio ):
+                if widget_wh_ratio < rect_wh_ratio:
                     # fit to widget width
-                    finview['width']  = int( finbbox['width'] * 1.5 / self.zoom_factor )
-                    finview['height'] = int( finbbox['width'] * 1.5 / self.zoom_factor / widget_wh_ratio )
+                    finview['width']  = int(finbbox['width']*1.5/self.zoom_factor)
+                    finview['height'] = int(finbbox['width']*1.5/self.zoom_factor/widget_wh_ratio)
                 else:
                     # fit to widget height
-                    finview['height'] = int( finbbox['height'] * 1.5 / self.zoom_factor )
-                    finview['width']  = int( finbbox['height'] * 1.5 / self.zoom_factor * widget_wh_ratio )
-                finview['x1'] = max( int( center_x * orig_width  - ( finview['width']  / 2 ) ), 0 )
-                finview['y1'] = max( int( center_y * orig_height - ( finview['height'] / 2 ) ), 0 )
+                    finview['height']=int(finbbox['height']*1.5/self.zoom_factor)
+                    finview['width'] =int(finbbox['height']*1.5/self.zoom_factor*widget_wh_ratio)
+                finview['x1'] = max( int( center_x * orig_width  - ( finview['width'] /2 ) ), 0)
+                finview['y1'] = max( int( center_y * orig_height - ( finview['height']/2 ) ), 0)
                 finview['x2'] = finview['x1'] + finview['width']
                 finview['y2'] = finview['y1'] + finview['height']
-                if( finview['x2'] > orig_width ):
-                    finview['x1'] = max( finview['x1'] - ( finview['x2'] - orig_width ), 0 ) 
+                if finview['x2'] > orig_width:
+                    finview['x1'] = max( finview['x1'] - ( finview['x2'] - orig_width ), 0 )
                     #finview['x1'] = finview['x1'] - ( finview['x2'] - orig_width )
                     finview['x2'] = orig_width
-                if( finview['y2'] > orig_height ):
+                if finview['y2'] > orig_height:
                     finview['y1'] = max( finview['y1'] - ( finview['y2'] - orig_height ), 0 )
                     #finview['y1'] = finview['y1'] - ( finview['y2'] - orig_height )
                     finview['y2'] = orig_height
@@ -1282,7 +1280,7 @@ class DolfinNoteWindow(QMainWindow, form_class) :
                 widget_width = widget.size().width()
                 widget_height = widget.size().height()
                 widget_wh_ratio = widget_width / widget_height
-            if( widget_wh_ratio < rect_wh_ratio ):
+            if widget_wh_ratio < rect_wh_ratio:
                 # fit to widget width
                 finview['width']  = int( view_width / self.zoom_factor )
                 finview['height'] = int( view_width / self.zoom_factor / widget_wh_ratio )
@@ -1290,15 +1288,15 @@ class DolfinNoteWindow(QMainWindow, form_class) :
                 # fit to widget height
                 finview['height'] = int( view_height / self.zoom_factor )
                 finview['width']  = int( view_height / self.zoom_factor * widget_wh_ratio )
-            
+
             finview['x1'] = max( int(center_x  - ( finview['width']  / 2 )), 0 )
             finview['y1'] = max( int(center_y - ( finview['height'] / 2 )), 0 )
             finview['x2'] = finview['x1'] + finview['width']
             finview['y2'] = finview['y1'] + finview['height']
-            if( finview['x2'] > orig_width ):
-                finview['x1'] = max( finview['x1'] - ( finview['x2'] - orig_width ), 0 ) 
+            if finview['x2'] > orig_width:
+                finview['x1'] = max( finview['x1'] - ( finview['x2'] - orig_width ), 0 )
                 finview['x2'] = orig_width
-            if( finview['y2'] > orig_height ):
+            if finview['y2'] > orig_height:
                 finview['y1'] = max( finview['y1'] - ( finview['y2'] - orig_height ), 0 )
                 finview['y2'] = orig_height
             #finview['x1'] -= self.pan_delta_x
@@ -1315,13 +1313,11 @@ class DolfinNoteWindow(QMainWindow, form_class) :
         local_bbox = {}
         for k in finbbox.keys():
             local_bbox[k] = finbbox[k]
-        if( self.temp_bbox != None ):
+        if self.temp_bbox != None:
             for k in self.temp_bbox.keys():
                 local_bbox[k] = self.temp_bbox[k]
-        
 
         cropped_pixmap = orig_pixmap.copy( finview['x1'], finview['y1'], finview['width'], finview['height'] )
-        #if finview['x2'] 
 
         if( draw_bbox and 'x1' in local_bbox.keys() ):
             qpainter = QPainter( cropped_pixmap )
@@ -1335,35 +1331,32 @@ class DolfinNoteWindow(QMainWindow, form_class) :
             #print("local_bbox", local_bbox )
             pen = {}
             pen_width = 2
-            if( self.zoom_ratio < 1 ):
+            if self.zoom_ratio < 1:
                 pen_width = int( 2.0 / self.zoom_ratio )
             #print( "zoom ratio:", self.zoom_ratio, "pen width:", pen_width)
             for k in ['x1', 'x2', 'y1', 'y2' ]:
                 pen[k] = QPen( self.bbox_color[k] )
                 pen[k].setWidth( pen_width )
             qpainter.setPen(pen['y1'])
-            qpainter.drawLine( actual_box['x1'], actual_box['y1'], actual_box['x2'], actual_box['y1'] )
+            qpainter.drawLine(actual_box['x1'],actual_box['y1'],actual_box['x2'],actual_box['y1'])
             qpainter.setPen(pen['x2'])
-            qpainter.drawLine( actual_box['x2'], actual_box['y1'], actual_box['x2'], actual_box['y2'] )
+            qpainter.drawLine(actual_box['x2'],actual_box['y1'],actual_box['x2'],actual_box['y2'])
             qpainter.setPen(pen['x1'])
-            qpainter.drawLine( actual_box['x1'], actual_box['y1'], actual_box['x1'], actual_box['y2'] )
+            qpainter.drawLine(actual_box['x1'],actual_box['y1'],actual_box['x1'],actual_box['y2'])
             qpainter.setPen(pen['y2'])
-            qpainter.drawLine( actual_box['x1'], actual_box['y2'], actual_box['x2'], actual_box['y2'] )
-
+            qpainter.drawLine(actual_box['x1'],actual_box['y2'],actual_box['x2'],actual_box['y2'])
             qpainter.end()
-
         end = time.perf_counter()
-        #print("elapsed time:", end - start )
 
         return cropped_pixmap
 
     def rbIsFinFunction(self):
-        if( self.rbIsFinYes.isChecked() ):
+        if self.rbIsFinYes.isChecked():
             self.current_fin_record.is_fin = True
         else:
             self.current_fin_record.is_fin = False
         self.update_modification_info()
-            
+
     def edtLocationEditedFunction(self,text):
         self.current_fin_record.location = text
         self.update_modification_info()
@@ -1388,7 +1381,6 @@ class DolfinNoteWindow(QMainWindow, form_class) :
         if new_finid not in self.finid_info.keys():
             self.add_new_finid_info(new_finid)
 
-        #self.current_item.setData( self.current_fin_record.get_itemname_with_dolfin_id(), Qt.DisplayRole)
         fin_record = self.current_fin_record
         old_finid = fin_record.dolfin_id
         if old_finid != new_finid:
@@ -1435,7 +1427,7 @@ class DolfinNoteWindow(QMainWindow, form_class) :
 
     def edtCommentChangedFunction(self):
         text = self.edtComment.toPlainText()
-        if( self.current_fin_record.comment != text):
+        if self.current_fin_record.comment != text:
             self.current_fin_record.comment = text
             self.update_modification_info()
 
@@ -1450,7 +1442,7 @@ class DolfinNoteWindow(QMainWindow, form_class) :
         self.current_fin_record.modified_on = now
         self.edtModifiedOn.setDateTime(QDateTime.fromString(now,"yyyy-MM-dd hh:mm:ss"))
 
-        if( self.current_modifier != '' ):
+        if self.current_modifier != '':
             self.edtModifiedBy.setText( self.current_modifier )
             self.edtModifiedByEditedFunction( self.current_modifier )
 
@@ -1460,14 +1452,14 @@ class DolfinNoteWindow(QMainWindow, form_class) :
             return
 
         old_finid = self.trFinIDTree.currentItem().text(0)
-        if( old_finid in DEFAULT_FINID_BUTTONS ):
+        if old_finid in DEFAULT_FINID_BUTTONS:
             return
 
         new_finid = self.edtNewID.text()
         if new_finid in self.finid_info.keys() or new_finid == self.finid_base_text:
             return
 
-        # 새 폴더, 버튼 추가 
+        # 새 폴더, 버튼 추가
         self.add_new_finid_info( new_finid )
         self.edtNewID.setText( self.finid_base_text)
         self.edtNewID.setCursorPosition( len(self.finid_base_text) )
@@ -1491,7 +1483,7 @@ class DolfinNoteWindow(QMainWindow, form_class) :
         if curr_item == None:
             return
         old_finid = curr_item.text(0)
-        if( old_finid == BTN_NOT_ASSIGNED ):
+        if old_finid == BTN_NOT_ASSIGNED:
             return
 
         #fin_record = curr_item.data()
@@ -1529,7 +1521,7 @@ class DolfinNoteWindow(QMainWindow, form_class) :
                 if text == finid:
                     #print("remove", text)
                     root.removeChild( child )
-            #if 
+            #if
         #for item in items:
         #    item.parent().removeChild( item )
 
@@ -1574,19 +1566,12 @@ class DolfinNoteWindow(QMainWindow, form_class) :
                 #i += 1
                 for fin_record in self.all_image_fin_list[image_index]:
                     if fin_record.image_width == 0:
-                        image_width, image_height = imagesize.get(str(self.image_path_list[image_index]))
+                        img_w, img_h = imagesize.get(str(self.image_path_list[image_index]))
                         #print(width, height)
-                        fin_record.image_width = image_width
-                        fin_record.image_height = image_height
-                    writer.writerow({'folder_name':fin_record.folder_name,'image_name': fin_record.image_name, 'image_width': fin_record.image_width,
-                                     'image_height': fin_record.image_height,'class_id': int(fin_record.class_id), 
-                                     'fin_index': fin_record.fin_index, 'center_x': fin_record.center_x, 'center_y': fin_record.center_y, 
-                                     'width': fin_record.width, 'height': fin_record.height, 'confidence': fin_record.confidence,
-                                     'is_fin': fin_record.is_fin, 'image_datetime': fin_record.image_datetime, 
-                                     'location': fin_record.location, 'latitude': fin_record.latitude, 'longitude': fin_record.longitude,
-                                     'map_datum': fin_record.map_datum, 'dolfin_id': fin_record.dolfin_id, 'observed_by': fin_record.observed_by, 
-                                     'created_by': fin_record.created_by, 'created_on': fin_record.created_on,
-                                     'modified_by': fin_record.modified_by, 'modified_on': fin_record.modified_on, 'comment': fin_record.comment})
+                        fin_record.image_width = img_w
+                        fin_record.image_height = img_h
+                    writer.writerow( fin_record.get_info() )
+
         self.btnSaveFinsFunction2()
         QApplication.restoreOverrideCursor()
 
@@ -1612,7 +1597,7 @@ class DolfinNoteWindow(QMainWindow, form_class) :
         image_hash = {}
 
         bytearray_hash = pickle.load( open( filepath, "rb" ) )
-        
+
         for k in bytearray_hash.keys():
             byte_array = bytearray_hash[k]
 
@@ -1638,27 +1623,29 @@ class DolfinNoteWindow(QMainWindow, form_class) :
 
 
         result_dir = str( Path( self.working_folder ).joinpath( "result" ) )
-        self.progressDlg = ProgressDialog()
-        self.progressDlg.setModal(True)
-        self.progressDlg.lblText.setText("Saving fin images from 0 of " + str( len( self.image_path_list ) ) + " files...")
-        self.progressDlg.pbProgress.setValue( 0 ) 
-        self.progressDlg.show()
+        self.progress_dialog = ProgressDialog()
+        self.progress_dialog.setModal(True)
+        label_text = "Saving fin images from 0 of {} files...".format(len(self.image_path_list))
+        self.progress_dialog.lblText.setText(label_text)
+        self.progress_dialog.pbProgress.setValue( 0 )
+        self.progress_dialog.show()
 
 
         i = 0
         for img_idx in range( len( self.image_path_list ) ):
 
             i += 1
-            self.progressDlg.pbProgress.setValue( int( ( i / float(len(self.image_path_list)) ) * 100 ) ) 
-            self.progressDlg.lblText.setText("Saving fin images from " + str( i ) + " of " + str( len( self.image_path_list ) ) + " files...")
-            self.progressDlg.update()
-            QApplication.processEvents() 
+            self.progress_dialog.pbProgress.setValue(int((i/float(len(self.image_path_list)))*100))
+            label_text="Saving fin images from {} of {} files..".format(i,len(self.image_path_list))
+            self.progress_dialog.lblText.setText()
+            self.progress_dialog.update()
+            QApplication.processEvents()
 
-            if( self.orig_pixmap_list[img_idx] == None ):
+            if self.orig_pixmap_list[img_idx] == None:
                 img_path = self.working_folder.joinpath( self.image_path_list[img_idx] )
                 pixmap = QPixmap(str(img_path))
 
-            filepath_stem = str( Path(result_dir).joinpath( Path(self.image_path_list[img_idx]).stem ) )
+            filepath_stem=str(Path(result_dir).joinpath(Path(self.image_path_list[img_idx]).stem))
             for fin_idx in range( len( self.all_image_fin_list[img_idx] ) ):
                 fin_pixmap = self.get_cropped_fin_image( pixmap, img_idx, fin_idx )
                 fin_img = fin_pixmap.toImage()
@@ -1671,7 +1658,7 @@ class DolfinNoteWindow(QMainWindow, form_class) :
                 fin_img.save( filename )
 
         #store_many_lmdb( self.working_folder, fin_info_list )
-        self.progressDlg.close()
+        self.progress_dialog.close()
 
         QApplication.restoreOverrideCursor()
 
@@ -1680,7 +1667,8 @@ class DolfinNoteWindow(QMainWindow, form_class) :
         self.edtConfidence.setText('')
         self.rbIsFinYes.setChecked(False)
         self.rbIsFinNo.setChecked(False)
-        self.edtImageDateTime.setDateTime(QDateTime.fromString('1900-01-01 00:00:00',"yyyy-MM-dd hh:mm:ss"))
+        init_datetime = QDateTime.fromString('1900-01-01 00:00:00',"yyyy-MM-dd hh:mm:ss")
+        self.edtImageDateTime.setDateTime(init_datetime)
         self.edtLocation.setText('')
         self.edtLatitude.setText('')
         self.edtLongitude.setText('')
@@ -1688,9 +1676,9 @@ class DolfinNoteWindow(QMainWindow, form_class) :
         self.edtDolfinID.setText('')
         self.edtObservedBy.setText('')
         self.edtCreatedBy.setText('')
-        self.edtCreatedOn.setDateTime(QDateTime.fromString('1900-01-01 00:00:00',"yyyy-MM-dd hh:mm:ss"))
+        self.edtCreatedOn.setDateTime(init_datetime)
         self.edtModifiedBy.setText('')
-        self.edtModifiedOn.setDateTime(QDateTime.fromString('1900-01-01 00:00:00',"yyyy-MM-dd hh:mm:ss"))
+        self.edtModifiedOn.setDateTime(init_datetime)
         wasBlocked = self.edtComment.blockSignals(True)
         self.edtComment.setPlainText('')
         self.edtComment.blockSignals(wasBlocked)
@@ -1708,7 +1696,7 @@ class DolfinNoteWindow(QMainWindow, form_class) :
 
         self.lblFinView.clear()
 
-        if( self.orig_pixmap_list[image_index] == None ):
+        if self.orig_pixmap_list[image_index] == None:
             self.orig_pixmap_list[image_index] = QPixmap(str(image_path))
         #orig_pixmap = QPixmap( str(self.image_path_list[image_index]))
         #print("refresh_finview zoom_factor:", self.zoom_factor)
@@ -1718,7 +1706,7 @@ class DolfinNoteWindow(QMainWindow, form_class) :
         #pixmap = QPixmap( icon.pixmap(icon.actualSize(QSize(256,256))) )
 
         pixmap2 = self.get_fit_pixmap_to_view( pixmap, self.lblFinView )
-            
+
         zoom_factor = int( ( float(pixmap2.width()) / float(pixmap.width()) ) * 10 )
         #self.sldZoom.setValue( self.zoom_factor )
         #print("zoom:", zoom_factor)
@@ -1751,7 +1739,7 @@ class DolfinNoteWindow(QMainWindow, form_class) :
 
         btn = QToolButton()
         btn.setText(fin_id)
-        btn.setMinimumSize(self.BUTTON_WIDTH,self.BUTTON_HEIGHT)
+        btn.setMinimumSize(TOOLBUTTON_WIDTH,TOOLBUTTON_HEIGHT)
         btn.clicked.connect(self.make_btnClicked(fin_id))
 
         key_list = list(self.finid_info.keys())
@@ -1773,7 +1761,7 @@ class DolfinNoteWindow(QMainWindow, form_class) :
         item = QTreeWidgetItem(self.top_folder, [fin_id])
         item.setIcon( 0, QIcon("folder-icon.png") )
 
-        self.finid_info[fin_id] = {} 
+        self.finid_info[fin_id] = {}
         self.finid_info[fin_id]['button'] = btn
         self.finid_info[fin_id]['fin_record_hash'] = {}
         self.finid_info[fin_id]['finname_list'] = []
@@ -1791,15 +1779,15 @@ class DolfinNoteWindow(QMainWindow, form_class) :
             self.top_folder.insertChild(i,removed_items[i])
 
     def closeEvent(self, event):
-        if( self.mainview_dlg != None ):
+        if self.mainview_dlg != None:
             self.mainview_dlg.close()
 
 if __name__ == "__main__" :
     #QApplication : 프로그램을 실행시켜주는 클래스
-    app = QApplication(sys.argv) 
+    app = QApplication(sys.argv)
 
     #WindowClass의 인스턴스 생성
-    myWindow = DolfinNoteWindow() 
+    myWindow = DolfinNoteWindow()
 
     #프로그램 화면을 보여주는 코드
     myWindow.show()
