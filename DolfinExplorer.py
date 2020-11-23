@@ -139,6 +139,7 @@ class GeoCoder(QtNetwork.QNetworkAccessManager):
 
     def _parseResult(self, reply):
         xml = reply.readAll()
+        print("xml:", xml)
         reader = QtCore.QXmlStreamReader(xml)
         while not reader.atEnd():
             reader.readNext()
@@ -172,9 +173,10 @@ class QGoogleMap(QtWebEngineWidgets.QWebEngineView):
         channel = QtWebChannel.QWebChannel(self)
         self.page().setWebChannel(channel)
         channel.registerObject("qGoogleMap", self)
+        #print(JS)
         self.page().runJavaScript(JS)
 
-        html = HTML.replace("API_KEY", "YOUR_API_KEY_HERE")
+        html = HTML.replace("API_KEY", "AIzaSyD_Ry4gzWfq8RYfo57WA4cs1VzEPWpBka8")
         self.setHtml(html)
         self.loadFinished.connect(self.on_loadFinished)
         self.initialized = False
@@ -302,28 +304,43 @@ if __name__ == '__main__':
 
     API_KEY = "AIzaSyD_Ry4gzWfq8RYfo57WA4cs1VzEPWpBka8"
 
+    print("1")
     app = QtWidgets.QApplication(sys.argv)
+    print("2")
     w = QGoogleMap(api_key=API_KEY)
+    print("3")
     w.resize(640, 480)
+    print("4")
     w.show()
+    print("5")
     w.waitUntilReady()
+    print("6")
     w.setZoom(14)
-    lat, lng = w.centerAtAddress("Lima Peru")
+    print("7")
+    lat, lng = w.centerAtAddress("Seoul Korea")
+    print("8")
+    print( lat, lng )
     if lat is None and lng is None:
-        lat, lng = -12.0463731, -77.042754
+        lat, lng = 37.56, 126.978
         w.centerAt(lat, lng)
-
+    print("9")
     w.addMarker("MyDragableMark", lat, lng, **dict(
         icon="http://maps.gstatic.com/mapfiles/ridefinder-images/mm_20_red.png",
         draggable=True,
         title="Move me!"
     ))
+    print("10")
 
     for place in ["Plaza Ramon Castilla", "Plaza San Martin", ]:
         w.addMarkerAtAddress(place, icon="http://maps.gstatic.com/mapfiles/ridefinder-images/mm_20_gray.png")
 
+    print("11")
     w.mapMoved.connect(print)
+    print("12")
     w.mapClicked.connect(print)
+    print("13")
     w.mapRightClicked.connect(print)
+    print("14")
     w.mapDoubleClicked.connect(print)
+    print("15")
     sys.exit(app.exec_())
