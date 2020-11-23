@@ -97,13 +97,13 @@ class DolfinNoteWindow(QMainWindow, form_class):
         super().__init__()
         self.setupUi(self)
         self.btnOpenFolder.clicked.connect(self.open_folder_function)
-        self.btnNewID.clicked.connect(self.btnNewIDFunction)
+        self.btnNewID.clicked.connect(self.new_finid_function)
         self.btnRemoveID.clicked.connect(self.btnRemoveIDFunction)
         self.btnRenameID.clicked.connect(self.btnRenameIDFunction)
         self.btnIconZoomIn.clicked.connect(self.btnIconZoomInFunction)
         self.btnIconZoomOut.clicked.connect(self.btnIconZoomOutFunction)
-        self.btnNextFin.clicked.connect(self.btnNextFinFunction)
-        self.btnPrevFin.clicked.connect(self.btnPrevFinFunction)
+        self.btnNextFin.clicked.connect(self.prev_fin_function)
+        self.btnPrevFin.clicked.connect(self.prev_fin_function)
         self.actionOpenFolder.triggered.connect(self.open_folder_function)
         self.actionSaveData.triggered.connect(self.save_data_function)
         self.actionIconView.triggered.connect(self.setIconView)
@@ -114,7 +114,7 @@ class DolfinNoteWindow(QMainWindow, form_class):
         self.btnMainView.clicked.connect(self.popout_mainview_function)
         self.btnAddNewFin.clicked.connect(self.add_new_fin_function)
 
-        self.chkShowBbox.clicked.connect(self.chkShowBboxClicked)
+        self.chkShowBbox.clicked.connect(self.show_bbox_clicked)
         self.rbIsFinYes.clicked.connect(self.rbIsFinFunction)
         self.rbIsFinNo.clicked.connect(self.rbIsFinFunction)
         self.edtLocation.textEdited.connect(self.edtLocationEditedFunction)
@@ -179,7 +179,7 @@ class DolfinNoteWindow(QMainWindow, form_class):
 
         self.edtNewID.setText(self.finid_base_text)
         self.edtNewID.setCursorPosition(len(self.finid_base_text))
-        self.edtNewID.returnPressed.connect(self.btnNewIDFunction)
+        self.edtNewID.returnPressed.connect(self.new_finid_function)
 
         self.current_image_index = -1
         self.current_fin_index0 = -1
@@ -365,11 +365,11 @@ class DolfinNoteWindow(QMainWindow, form_class):
                 #self.lblFinView.setCursor()
                 self.pos_to_move = pos_to_move = []
 
-            for pos in self.bbox_color.keys():
-                if pos in pos_to_move:
-                    self.bbox_color[pos] = near_cursor_bbox_color
+            for pos_key, pos_val in self.bbox_color.items():
+                if pos_key in pos_to_move:
+                    self.bbox_color[pos_key] = near_cursor_bbox_color
                 else:
-                    self.bbox_color[pos] = normal_bbox_color
+                    self.bbox_color[pos_key] = normal_bbox_color
 
         elif(event.type() == QEvent.MouseMove and self.finview_mode == FV_DRAG):
             diff = {}
@@ -702,10 +702,10 @@ class DolfinNoteWindow(QMainWindow, form_class):
         #print("key press")
         if event.key() == Qt.Key_Up:
             self.edtDolfinIDEditFinishedFunction()
-            self.btnPrevFinFunction()
+            self.prev_fin_function()
         elif event.key() == Qt.Key_Down:
             self.edtDolfinIDEditFinishedFunction()
-            self.btnNextFinFunction()
+            self.next_fin_function()
         elif event.key() == Qt.Key_Plus and numpad_mod:
             self.btnIconZoomInFunction()
             #print("numpad plus")
@@ -714,7 +714,7 @@ class DolfinNoteWindow(QMainWindow, form_class):
             self.btnIconZoomOutFunction()
         return
 
-    def btnPrevFinFunction(self):
+    def prev_fin_function(self):
         index = self.lstFinList2.currentIndex()
         if index is None or index.model() is None:
             return
@@ -728,7 +728,7 @@ class DolfinNoteWindow(QMainWindow, form_class):
         self.lstFinList2.setCurrentIndex(prev_index)
         return
 
-    def btnNextFinFunction(self):
+    def next_fin_function(self):
         index = self.lstFinList2.currentIndex()
         if index is None or index.model() is None:
             return
@@ -744,7 +744,7 @@ class DolfinNoteWindow(QMainWindow, form_class):
         self.lstFinList2.setCurrentIndex(next_index)
         return
 
-    def chkShowBboxClicked(self):
+    def show_bbox_clicked(self):
         if self.chkShowBbox.isChecked():
             self.show_bbox = True
         else:
@@ -779,6 +779,9 @@ class DolfinNoteWindow(QMainWindow, form_class):
         elif(text[0:3] == self.finid_base_text or text == BTN_NO_FIN):
             self.proxy_model.setFilterRegExp(QRegExp(text, Qt.CaseInsensitive, QRegExp.FixedString))
             self.proxy_model.setFilterKeyColumn(1)
+        self.lblMainView.clear()
+        self.lblFinView.clear()
+        self.reset_input_fields()
 
     def update_toolbutton_icon(self, fin_id):
         fin_record_hash = self.finid_info[fin_id]['fin_record_hash']
@@ -867,7 +870,7 @@ class DolfinNoteWindow(QMainWindow, form_class):
 
         return button_clicked
 
-    def btnNewIDFunction(self):
+    def new_finid_function(self):
         new_id = self.edtNewID.text()
         if new_id in self.finid_info.keys() or new_id == self.finid_base_text:
             return
@@ -1264,6 +1267,17 @@ class DolfinNoteWindow(QMainWindow, form_class):
 
         cropped_pixmap = orig_pixmap.copy(finview['x1'], finview['y1'], finview['width'], finview['height'])
 
+        p_width, p_height = cropped_pixmap.width(), cropped_pixmap.height()
+
+        if square and p_width != p_height:
+            p_size = max(p_width, p_height)
+            empty_pixmap = QPixmap(p_size, p_size)
+            empty_pixmap.fill(Qt.gray)
+            l_painter = QPainter(empty_pixmap)
+            l_painter.drawPixmap(cropped_pixmap.rect(), cropped_pixmap)
+            cropped_pixmap = empty_pixmap
+
+
         if(draw_bbox and 'x1' in local_bbox.keys()):
             qpainter = QPainter(cropped_pixmap)
             act_box = {'x1': local_bbox['x1'] - finview['x1'],
@@ -1289,7 +1303,7 @@ class DolfinNoteWindow(QMainWindow, form_class):
             qpainter.setPen(pen['y2'])
             qpainter.drawLine(act_box['x1'], act_box['y2'], act_box['x2'], act_box['y2'])
             qpainter.end()
-        end = time.perf_counter()
+        #end = time.perf_counter()
 
         return cropped_pixmap
 
@@ -1342,17 +1356,24 @@ class DolfinNoteWindow(QMainWindow, form_class):
         finname = fin_record.get_finname()
         #print("process finid change", finname, old_finid, new_finid)
 
-        if new_finid not in ['', BTN_NOT_ASSIGNED]:
+        if new_finid == BTN_NOT_ASSIGNED:
             icon_pixmap = QPixmap(self.finicon_hash[fin_record.get_finname()])
-            new_pixmap = self.write_finid_on_icon(icon_pixmap, new_finid)
-            item1.setIcon(QIcon(new_pixmap))
+            item1.setIcon(QIcon(icon_pixmap))
+            item2.setData('', Qt.DisplayRole)
+            fin_record.dolfin_id = ''
+
+        elif new_finid != '':
+            icon_pixmap = QPixmap(self.finicon_hash[fin_record.get_finname()])
+            icon_pixmap = self.write_finid_on_icon(icon_pixmap, new_finid)
+            item1.setIcon(QIcon(icon_pixmap))
             item2.setData(new_finid, Qt.DisplayRole)
             new_fin_record_hash = self.finid_info[new_finid]['fin_record_hash']
             new_fin_record_hash[finname] = fin_record
 
             new_finname_list = self.finid_info[new_finid]['finname_list']
             new_finname_list.append(finname)
-            fin_record.dolfin_id = new_finid
+            if new_finid != BTN_NO_FIN:
+                fin_record.dolfin_id = new_finid
 
             self.update_toolbutton_icon(new_finid)
 
