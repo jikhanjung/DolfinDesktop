@@ -9,3 +9,5 @@ __pycache__/DolfinNote.cpython-38.pyc
 DolfinDetector.spec
 DolfinExplorer.spec
 DolfinNote.spec
+build/
+dist/
