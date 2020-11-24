@@ -135,9 +135,9 @@ class GeoCoder(QtNetwork.QNetworkAccessManager):
         loop.exec_()
         reply.deleteLater()
         self.deleteLater()
-        return self._parseResult(reply)
+        return self.parse_result(reply)
 
-    def _parseResult(self, reply):
+    def parse_result(self, reply):
         xml = reply.readAll()
         print("xml:", xml)
         reader = QtCore.QXmlStreamReader(xml)
@@ -178,10 +178,11 @@ class QGoogleMap(QtWebEngineWidgets.QWebEngineView):
         #self.page().runJavaScript(JS)
         #print("run javascript done")
 
-        html = HTML.replace("API_KEY", "AIzaSyD_Ry4gzWfq8RYfo57WA4cs1VzEPWpBka8")
+        html = HTML.replace("API_KEY", api_key)
         self.setHtml(html)
         self.loadFinished.connect(self.on_loadFinished)
         self.initialized = False
+        self._center = None
 
         self._manager = QtNetwork.QNetworkAccessManager(self)
 
@@ -217,37 +218,37 @@ class QGoogleMap(QtWebEngineWidgets.QWebEngineView):
         return self.addMarker(location, latitude, longitude, **extra)
 
     @QtCore.pyqtSlot(float, float)
-    def mapIsMoved(self, lat, lng):
-        self.mapMoved.emit(lat, lng)
+    def mapIsMoved(self, latitude, longitude):
+        self.mapMoved.emit(latitude, longitude)
 
     @QtCore.pyqtSlot(float, float)
-    def mapIsClicked(self, lat, lng):
-        self.mapClicked.emit(lat, lng)
+    def mapIsClicked(self, latitude, longitude):
+        self.mapClicked.emit(latitude, longitude)
 
     @QtCore.pyqtSlot(float, float)
-    def mapIsRightClicked(self, lat, lng):
-        self.mapRightClicked.emit(lat, lng)
+    def mapIsRightClicked(self, latitude, longitude):
+        self.mapRightClicked.emit(latitude, longitude)
 
     @QtCore.pyqtSlot(float, float)
-    def mapIsDoubleClicked(self, lat, lng):
-        self.mapDoubleClicked.emit(lat, lng)
+    def mapIsDoubleClicked(self, latitude, longitude):
+        self.mapDoubleClicked.emit(latitude, longitude)
 
     # markers
     @QtCore.pyqtSlot(str, float, float)
-    def markerIsMoved(self, key, lat, lng):
-        self.markerMoved.emit(key, lat, lng)
+    def markerIsMoved(self, key, latitude, longitude):
+        self.markerMoved.emit(key, latitude, longitude)
 
     @QtCore.pyqtSlot(str, float, float)
-    def markerIsClicked(self, key, lat, lng):
-        self.markerClicked.emit(key, lat, lng)
+    def markerIsClicked(self, key, latitude, longitude):
+        self.markerClicked.emit(key, latitude, longitude)
 
     @QtCore.pyqtSlot(str, float, float)
-    def markerIsRightClicked(self, key, lat, lng):
-        self.markerRightClicked.emit(key, lat, lng)
+    def markerIsRightClicked(self, key, latitude, longitude):
+        self.markerRightClicked.emit(key, latitude, longitude)
 
     @QtCore.pyqtSlot(str, float, float)
-    def markerIsDoubleClicked(self, key, lat, lng):
-        self.markerDoubleClicked.emit(key, lat, lng)
+    def markerIsDoubleClicked(self, key, latitude, longitude):
+        self.markerDoubleClicked.emit(key, latitude, longitude)
 
     def runScript(self, script, callback=None):
         if callback is None:
@@ -304,7 +305,7 @@ class QGoogleMap(QtWebEngineWidgets.QWebEngineView):
 if __name__ == '__main__':
     import sys
 
-    API_KEY = "AIzaSyD_Ry4gzWfq8RYfo57WA4cs1VzEPWpBka8"
+    API_KEY = ""
 
     app = QtWidgets.QApplication(sys.argv)
     w = QGoogleMap(api_key=API_KEY)

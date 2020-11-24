@@ -8,6 +8,7 @@ from datetime import datetime
 import time
 import math
 from operator import itemgetter, attrgetter
+import webbrowser
 
 from PyQt5.QtWidgets import *
 from PyQt5 import uic
@@ -15,7 +16,7 @@ from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 
 from DolfinRecord import DolfinRecord, fieldnames
-from DolfinExplorer import QGoogleMap
+#from DolfinExplorer import QGoogleMap
 #from DolfinNote import DolfinNoteWindow
 import pickle
 
@@ -650,16 +651,22 @@ class DolfinNoteWindow(QMainWindow, form_class):
             self.refresh_mainview()
 
     def show_in_map_function(self):
+
+        new = 2 # open in a new tab, if possible
+
+        # open a public URL, in this case, the webbrowser docs
+        #url = "http://docs.python.org/library/webbrowser.html"
+
         fin_record = self.current_fin_record
         if fin_record == None or fin_record.latitude == '' or fin_record.longitude == '':
             return
-        if self.map_dlg is None:
-            API_KEY = "AIzaSyD_Ry4gzWfq8RYfo57WA4cs1VzEPWpBka8"
-            self.map_dlg = QGoogleMap(api_key=API_KEY)
-            self.map_dlg.resize(1024, 768)
-            self.map_dlg.show()
-            self.map_dlg.waitUntilReady()
-            self.map_dlg.setZoom(14)
+        #if self.map_dlg is None:
+        #    API_KEY = "AIzaSyD_Ry4gzWfq8RYfo57WA4cs1VzEPWpBka8"
+        #    self.map_dlg = QGoogleMap(api_key=API_KEY)
+        #    self.map_dlg.resize(1024, 768)
+        #    self.map_dlg.show()
+        #    self.map_dlg.waitUntilReady()
+        #    self.map_dlg.setZoom(14)
         lat, lon = 0, 0
         lat_str, lon_str = fin_record.latitude, fin_record.longitude
 
@@ -673,7 +680,13 @@ class DolfinNoteWindow(QMainWindow, form_class):
         deg, rest = lon_str.split("°")
         minute, EW = rest.split("'")
         lon = (int(deg) + float(minute) / 60) * plus_minus
-        #print(lat_str, lon_str, lat, lon)
+        print(lat_str, lon_str, lat, lon)
+        marker_text = "{} {}".format(fin_record.dolfin_id,fin_record.image_datetime)
+        url = "https://maps.google.com/?q={},{}&ll={},{}&z=15".format(lat, lon, lat, lon)
+        url = "https://map.kakao.com/link/map/{},{},{}".format(marker_text,lat,lon)
+        
+        webbrowser.open(url,new=new)
+        return
 
         self.map_dlg.centerAt(lat, lon)
         self.map_dlg.addMarker(fin_record.dolfin_id, lat, lon, **dict(
