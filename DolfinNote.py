@@ -15,6 +15,7 @@ from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 
 from DolfinRecord import DolfinRecord, fieldnames
+from DolfinExplorer import QGoogleMap
 #from DolfinNote import DolfinNoteWindow
 import pickle
 
@@ -69,7 +70,7 @@ class ImageViewDlg(QWidget):
 
     def closeEvent(self, event):
         self.parent.mainview_dlg = None
-        self.parent.lbl_main_view.show()
+        self.parent.lblMainView.show()
         self.parent.refresh_mainview()
 
     def resizeEvent(self, event):
@@ -90,7 +91,6 @@ class ProgressDialog(QDialog):
         self.pb_progress.setGeometry(50, 120, 320, 40)
         self.pb_progress.setValue(0)
         self.setGeometry(600, 400, 400, 210)
-
 
 class DolfinNoteWindow(QMainWindow, form_class):
     def __init__(self):
@@ -113,6 +113,7 @@ class DolfinNoteWindow(QMainWindow, form_class):
         self.actionAbout.triggered.connect(self.about)
         self.btnMainView.clicked.connect(self.popout_mainview_function)
         self.btnAddNewFin.clicked.connect(self.add_new_fin_function)
+        self.btnShowInMap.clicked.connect(self.show_in_map_function)
 
         self.chkShowBbox.clicked.connect(self.show_bbox_clicked)
         self.rbIsFinYes.clicked.connect(self.rbIsFinFunction)
@@ -163,6 +164,7 @@ class DolfinNoteWindow(QMainWindow, form_class):
         self.mainview_width = -1
         self.mainview_height = -1
         self.mainview_dlg = None
+        self.map_dlg = None
         self.current_modifier = ''
 
         self.working_folder = Path("./")
@@ -227,7 +229,6 @@ class DolfinNoteWindow(QMainWindow, form_class):
         self.sldZoomRatio.hide()
         self.lblZoomRatio.hide()
         self.setWindowTitle(PROGRAM_NAME + " " + PROGRAM_VERSION)
-
 
     def finview_mouse_event(self, event):
         #print("finview mouse event")
@@ -647,6 +648,39 @@ class DolfinNoteWindow(QMainWindow, form_class):
             self.mainview_dlg.show()
             self.lblMainView.hide()
             self.refresh_mainview()
+
+    def show_in_map_function(self):
+        fin_record = self.current_fin_record
+        if fin_record == None or fin_record.latitude == '' or fin_record.longitude == '':
+            return
+        if self.map_dlg is None:
+            API_KEY = "AIzaSyD_Ry4gzWfq8RYfo57WA4cs1VzEPWpBka8"
+            self.map_dlg = QGoogleMap(api_key=API_KEY)
+            self.map_dlg.resize(1024, 768)
+            self.map_dlg.show()
+            self.map_dlg.waitUntilReady()
+            self.map_dlg.setZoom(14)
+        lat, lon = 0, 0
+        lat_str, lon_str = fin_record.latitude, fin_record.longitude
+
+        deg, rest = lat_str.split("°")
+        minute, ns = rest.split("'")
+        plus_minus = 1
+        if ns == 'S':
+            plus_minus = -1
+        lat = (int(deg) + float(minute) / 60) * plus_minus
+
+        deg, rest = lon_str.split("°")
+        minute, EW = rest.split("'")
+        lon = (int(deg) + float(minute) / 60) * plus_minus
+        #print(lat_str, lon_str, lat, lon)
+
+        self.map_dlg.centerAt(lat, lon)
+        self.map_dlg.addMarker(fin_record.dolfin_id, lat, lon, **dict(
+            icon="http://maps.gstatic.com/mapfiles/ridefinder-images/mm_20_red.png",
+            draggable=False,
+            title=fin_record.dolfin_id
+        ))
 
 
     def refresh_mainview(self):
@@ -1739,6 +1773,8 @@ class DolfinNoteWindow(QMainWindow, form_class):
     def closeEvent(self, event):
         if self.mainview_dlg is not None:
             self.mainview_dlg.close()
+        if self.map_dlg is not None:
+            self.map_dlg.close()
 
 if __name__ == "__main__":
     #QApplication : 프로그램을 실행시켜주는 클래스

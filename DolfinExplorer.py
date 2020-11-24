@@ -1,6 +1,7 @@
 import json
 
 from PyQt5 import QtCore, QtWidgets, QtWebEngineWidgets, QtWebChannel, QtNetwork
+#from PyQtWebEngine import QtWeb
 
 HTML = '''
 <!DOCTYPE html>
@@ -30,9 +31,7 @@ HTML = '''
 <div id="map_canvas" style="width:100%; height:100%"></div>
 </body>
 </html>
-'''
-
-JS = '''
+<script type="text/javascript">
 // main var
 var map;
 var markers = [];
@@ -114,6 +113,7 @@ function gmap_changeMarker(key, extras) {
     }
     markers[key].setOptions(extras);
 }
+</script>
 '''
 
 
@@ -174,7 +174,9 @@ class QGoogleMap(QtWebEngineWidgets.QWebEngineView):
         self.page().setWebChannel(channel)
         channel.registerObject("qGoogleMap", self)
         #print(JS)
-        self.page().runJavaScript(JS)
+        #print("run javascript")
+        #self.page().runJavaScript(JS)
+        #print("run javascript done")
 
         html = HTML.replace("API_KEY", "AIzaSyD_Ry4gzWfq8RYfo57WA4cs1VzEPWpBka8")
         self.setHtml(html)
@@ -304,43 +306,29 @@ if __name__ == '__main__':
 
     API_KEY = "AIzaSyD_Ry4gzWfq8RYfo57WA4cs1VzEPWpBka8"
 
-    print("1")
     app = QtWidgets.QApplication(sys.argv)
-    print("2")
     w = QGoogleMap(api_key=API_KEY)
-    print("3")
     w.resize(640, 480)
-    print("4")
     w.show()
-    print("5")
     w.waitUntilReady()
-    print("6")
     w.setZoom(14)
-    print("7")
     lat, lng = w.centerAtAddress("Seoul Korea")
-    print("8")
-    print( lat, lng )
+    #print( lat, lng )
     if lat is None and lng is None:
         lat, lng = 37.56, 126.978
         w.centerAt(lat, lng)
-    print("9")
+
     w.addMarker("MyDragableMark", lat, lng, **dict(
         icon="http://maps.gstatic.com/mapfiles/ridefinder-images/mm_20_red.png",
         draggable=True,
         title="Move me!"
     ))
-    print("10")
 
     for place in ["Plaza Ramon Castilla", "Plaza San Martin", ]:
         w.addMarkerAtAddress(place, icon="http://maps.gstatic.com/mapfiles/ridefinder-images/mm_20_gray.png")
 
-    print("11")
     w.mapMoved.connect(print)
-    print("12")
     w.mapClicked.connect(print)
-    print("13")
     w.mapRightClicked.connect(print)
-    print("14")
     w.mapDoubleClicked.connect(print)
-    print("15")
     sys.exit(app.exec_())

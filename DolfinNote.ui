@@ -96,7 +96,7 @@
         <item>
          <widget class="QStackedWidget" name="stackedWidget">
           <property name="currentIndex">
-           <number>0</number>
+           <number>1</number>
           </property>
           <widget class="QWidget" name="page">
            <layout class="QHBoxLayout" name="horizontalLayout_10">
@@ -118,6 +118,9 @@
                   <width>200</width>
                   <height>200</height>
                  </size>
+                </property>
+                <property name="resizeMode">
+                 <enum>QListView::Adjust</enum>
                 </property>
                </widget>
               </item>
@@ -302,7 +305,7 @@
                </layout>
               </item>
               <item>
-               <layout class="QVBoxLayout" name="verticalLayout_3" stretch="7,3,0">
+               <layout class="QVBoxLayout" name="verticalLayout_3" stretch="7,3,0,0">
                 <item>
                  <layout class="QFormLayout" name="formLayout">
                   <item row="1" column="0">
@@ -518,6 +521,13 @@
                  <widget class="QPushButton" name="btnMainView">
                   <property name="text">
                    <string>Pop out</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="btnShowInMap">
+                  <property name="text">
+                   <string>Show in Map</string>
                   </property>
                  </widget>
                 </item>

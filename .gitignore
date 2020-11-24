@@ -3,3 +3,9 @@ __pycache__/DolfinRecord.cpython-38.pyc
 .vscode/.ropeproject/objectdb
 .vscode/.ropeproject/config.py
 .vscode/settings.json
+__pycache__/DolfinDetector.cpython-38.pyc
+__pycache__/DolfinExplorer.cpython-38.pyc
+__pycache__/DolfinNote.cpython-38.pyc
+DolfinDetector.spec
+DolfinExplorer.spec
+DolfinNote.spec
