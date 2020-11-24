@@ -680,7 +680,7 @@ class DolfinNoteWindow(QMainWindow, form_class):
         deg, rest = lon_str.split("°")
         minute, EW = rest.split("'")
         lon = (int(deg) + float(minute) / 60) * plus_minus
-        print(lat_str, lon_str, lat, lon)
+        #print(lat_str, lon_str, lat, lon)
         marker_text = "{} {}".format(fin_record.dolfin_id,fin_record.image_datetime)
         url = "https://maps.google.com/?q={},{}&ll={},{}&z=15".format(lat, lon, lat, lon)
         url = "https://map.kakao.com/link/map/{},{},{}".format(marker_text,lat,lon)
@@ -817,15 +817,18 @@ class DolfinNoteWindow(QMainWindow, form_class):
         if text == 'All':
             self.proxy_model.setFilterRegExp(QRegExp('', Qt.CaseInsensitive, QRegExp.FixedString))
             self.proxy_model.setFilterKeyColumn(1)
+            self.btnAddNewFin.setEnabled(True)
         elif text == BTN_NOT_ASSIGNED:
             # find fins without whitespace
             #self.proxy_model
             self.proxy_model.setFilterRegExp(QRegExp('^$', Qt.CaseInsensitive, QRegExp.RegExp))
             self.proxy_model.setFilterKeyColumn(1)
+            self.btnAddNewFin.setEnabled(False)
             #pass
         elif(text[0:3] == self.finid_base_text or text == BTN_NO_FIN):
             self.proxy_model.setFilterRegExp(QRegExp(text, Qt.CaseInsensitive, QRegExp.FixedString))
             self.proxy_model.setFilterKeyColumn(1)
+            self.btnAddNewFin.setEnabled(False)
         self.lblMainView.clear()
         self.lblFinView.clear()
         self.reset_input_fields()
@@ -1733,6 +1736,7 @@ class DolfinNoteWindow(QMainWindow, form_class):
         self.top_folder.setIcon(0, QIcon("folder-icon.png"))
         self.trFinIDTree.insertTopLevelItem(0, self.top_folder)
         self.top_folder.setExpanded(True)
+        self.trFinIDTree.setCurrentItem(self.top_folder)
 
         for txt in DEFAULT_FINID_BUTTONS:
             self.add_new_finid_info(txt)
