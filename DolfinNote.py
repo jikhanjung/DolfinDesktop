@@ -24,7 +24,7 @@ fsock = open('error.log', 'w')
 sys.stderr = fsock
 
 PROGRAM_NAME = "DolfinNote"
-PROGRAM_VERSION = "0.1.1"
+PROGRAM_VERSION = "0.1.2"
 
 FV_VIEW = 0
 FV_DRAGREADY = 1
@@ -230,6 +230,7 @@ class DolfinNoteWindow(QMainWindow, form_class):
         self.sldZoomRatio.hide()
         self.lblZoomRatio.hide()
         self.setWindowTitle(PROGRAM_NAME + " " + PROGRAM_VERSION)
+        self.setWindowIcon(QIcon('marc_icon.png')) 
 
     def finview_mouse_event(self, event):
         #print("finview mouse event")
@@ -1788,6 +1789,7 @@ class DolfinNoteWindow(QMainWindow, form_class):
 if __name__ == "__main__":
     #QApplication : 프로그램을 실행시켜주는 클래스
     app = QApplication(sys.argv)
+    app.setWindowIcon(QIcon('marc_icon.png'))
 
     #WindowClass의 인스턴스 생성
     myWindow = DolfinNoteWindow()
