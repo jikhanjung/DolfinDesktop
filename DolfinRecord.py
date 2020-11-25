@@ -140,6 +140,24 @@ class DolfinRecord:
             return imagename_stem
         else:
             return '{}-{:02d}'.format( imagename_stem, int(self.fin_index) )
+    def get_decimal_latitude_longitude(self):
+        lat, lon = -1, -1
+        if self.latitude == '' or self.longitude == '':
+            return lat, lon
+
+        lat_str, lon_str = self.latitude, self.longitude
+
+        deg, rest = lat_str.split("°")
+        minute, ns = rest.split("'")
+        plus_minus = 1
+        if ns == 'S':
+            plus_minus = -1
+        lat = (int(deg) + float(minute) / 60) * plus_minus
+
+        deg, rest = lon_str.split("°")
+        minute, EW = rest.split("'")
+        lon = (int(deg) + float(minute) / 60) * plus_minus
+        return lat, lon
 
     def find_matching_record( self, record_list ):
         dist_list = []

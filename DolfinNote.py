@@ -165,7 +165,7 @@ class DolfinNoteWindow(QMainWindow, form_class):
         self.mainview_width = -1
         self.mainview_height = -1
         self.mainview_dlg = None
-        self.map_dlg = None
+        #self.map_dlg = None
         self.current_modifier = ''
 
         self.working_folder = Path("./")
@@ -653,7 +653,6 @@ class DolfinNoteWindow(QMainWindow, form_class):
     def show_in_map_function(self):
 
         new = 2 # open in a new tab, if possible
-
         # open a public URL, in this case, the webbrowser docs
         #url = "http://docs.python.org/library/webbrowser.html"
 
@@ -667,19 +666,9 @@ class DolfinNoteWindow(QMainWindow, form_class):
         #    self.map_dlg.show()
         #    self.map_dlg.waitUntilReady()
         #    self.map_dlg.setZoom(14)
-        lat, lon = 0, 0
-        lat_str, lon_str = fin_record.latitude, fin_record.longitude
 
-        deg, rest = lat_str.split("°")
-        minute, ns = rest.split("'")
-        plus_minus = 1
-        if ns == 'S':
-            plus_minus = -1
-        lat = (int(deg) + float(minute) / 60) * plus_minus
+        lat, lon = fin_record.get_decimal_latitude_longitude()
 
-        deg, rest = lon_str.split("°")
-        minute, EW = rest.split("'")
-        lon = (int(deg) + float(minute) / 60) * plus_minus
         #print(lat_str, lon_str, lat, lon)
         marker_text = "{} {}".format(fin_record.dolfin_id,fin_record.image_datetime)
         url = "https://maps.google.com/?q={},{}&ll={},{}&z=15".format(lat, lon, lat, lon)
@@ -688,12 +677,12 @@ class DolfinNoteWindow(QMainWindow, form_class):
         webbrowser.open(url,new=new)
         return
 
-        self.map_dlg.centerAt(lat, lon)
-        self.map_dlg.addMarker(fin_record.dolfin_id, lat, lon, **dict(
-            icon="http://maps.gstatic.com/mapfiles/ridefinder-images/mm_20_red.png",
-            draggable=False,
-            title=fin_record.dolfin_id
-        ))
+        #self.map_dlg.centerAt(lat, lon)
+        #self.map_dlg.addMarker(fin_record.dolfin_id, lat, lon, **dict(
+        #    icon="http://maps.gstatic.com/mapfiles/ridefinder-images/mm_20_red.png",
+        #    draggable=False,
+        #    title=fin_record.dolfin_id
+        #))
 
 
     def refresh_mainview(self):
@@ -1790,8 +1779,8 @@ class DolfinNoteWindow(QMainWindow, form_class):
     def closeEvent(self, event):
         if self.mainview_dlg is not None:
             self.mainview_dlg.close()
-        if self.map_dlg is not None:
-            self.map_dlg.close()
+        #if self.map_dlg is not None:
+        #    self.map_dlg.close()
 
 if __name__ == "__main__":
     #QApplication : 프로그램을 실행시켜주는 클래스
