@@ -24,7 +24,7 @@ fsock = open('error.log', 'w')
 sys.stderr = fsock
 
 PROGRAM_NAME = "DolfinNote"
-PROGRAM_VERSION = "0.1.0"
+PROGRAM_VERSION = "0.1.1"
 
 FV_VIEW = 0
 FV_DRAGREADY = 1
@@ -103,7 +103,7 @@ class DolfinNoteWindow(QMainWindow, form_class):
         self.btnRenameID.clicked.connect(self.btnRenameIDFunction)
         self.btnIconZoomIn.clicked.connect(self.btnIconZoomInFunction)
         self.btnIconZoomOut.clicked.connect(self.btnIconZoomOutFunction)
-        self.btnNextFin.clicked.connect(self.prev_fin_function)
+        self.btnNextFin.clicked.connect(self.next_fin_function)
         self.btnPrevFin.clicked.connect(self.prev_fin_function)
         self.actionOpenFolder.triggered.connect(self.open_folder_function)
         self.actionSaveData.triggered.connect(self.save_data_function)
@@ -1026,7 +1026,10 @@ class DolfinNoteWindow(QMainWindow, form_class):
 
                     new_finid = fin_record.dolfin_id
                     if not fin_record.is_fin:
-                        new_finid = BTN_NO_FIN
+                        if fin_record.confidence < 0:
+                            new_finid = BTN_NOT_ASSIGNED
+                        else:
+                            new_finid = BTN_NO_FIN
 
                     if new_finid != '' and new_finid not in self.finid_info.keys():
                         self.add_new_finid_info(new_finid)
