@@ -518,14 +518,15 @@ class DolfinNoteWindow(QMainWindow, form_class):
                 #print("wheel event in lstFinList")
         return QMainWindow.eventFilter(self, source, event)
 
-    def messageBox(self, message):
+    def messageBox(self, message1, message2=''):
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Information)
-        msg.setText(message)
+        msg.setText(message1)
         msg.setWindowTitle("Information")
         msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
         #msg.show()
-        #msg.setDetailedText("The details are as follows:")
+        if message2 != '':
+            msg.setInformativeText(message2)
         msg.exec_()
         #print("value of pressed message box button:", retval)
 
@@ -538,8 +539,7 @@ class DolfinNoteWindow(QMainWindow, form_class):
         self.messageBox("Export YOLO function will be here someday.")
 
     def about(self):
-        self.messageBox(PROGRAM_NAME + " " + PROGRAM_VERSION)
-
+        self.messageBox(PROGRAM_NAME+" "+PROGRAM_VERSION, "Jikhan Jung\nSoojin Jang\nHyun-jin Bae")
 
     def wheelEvent(self, event):
         #print("wheel event")
@@ -674,7 +674,7 @@ class DolfinNoteWindow(QMainWindow, form_class):
         marker_text = "{} {}".format(fin_record.dolfin_id,fin_record.image_datetime)
         url = "https://maps.google.com/?q={},{}&ll={},{}&z=15".format(lat, lon, lat, lon)
         url = "https://map.kakao.com/link/map/{},{},{}".format(marker_text,lat,lon)
-        
+
         webbrowser.open(url,new=new)
         return
 
@@ -684,7 +684,6 @@ class DolfinNoteWindow(QMainWindow, form_class):
         #    draggable=False,
         #    title=fin_record.dolfin_id
         #))
-
 
     def refresh_mainview(self):
         #print("pixmap 0:", self.orig_pixmap_list[image_index])
