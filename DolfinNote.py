@@ -24,7 +24,7 @@ fsock = open('error.log', 'w')
 sys.stderr = fsock
 
 PROGRAM_NAME = "DolfinNote"
-PROGRAM_VERSION = "0.1.0"
+PROGRAM_VERSION = "0.1.2"
 
 FV_VIEW = 0
 FV_DRAGREADY = 1
@@ -103,7 +103,7 @@ class DolfinNoteWindow(QMainWindow, form_class):
         self.btnRenameID.clicked.connect(self.btnRenameIDFunction)
         self.btnIconZoomIn.clicked.connect(self.btnIconZoomInFunction)
         self.btnIconZoomOut.clicked.connect(self.btnIconZoomOutFunction)
-        self.btnNextFin.clicked.connect(self.prev_fin_function)
+        self.btnNextFin.clicked.connect(self.next_fin_function)
         self.btnPrevFin.clicked.connect(self.prev_fin_function)
         self.actionOpenFolder.triggered.connect(self.open_folder_function)
         self.actionSaveData.triggered.connect(self.save_data_function)
@@ -165,7 +165,7 @@ class DolfinNoteWindow(QMainWindow, form_class):
         self.mainview_width = -1
         self.mainview_height = -1
         self.mainview_dlg = None
-        self.map_dlg = None
+        #self.map_dlg = None
         self.current_modifier = ''
 
         self.working_folder = Path("./")
@@ -230,6 +230,7 @@ class DolfinNoteWindow(QMainWindow, form_class):
         self.sldZoomRatio.hide()
         self.lblZoomRatio.hide()
         self.setWindowTitle(PROGRAM_NAME + " " + PROGRAM_VERSION)
+        self.setWindowIcon(QIcon('marc_icon.png')) 
 
     def finview_mouse_event(self, event):
         #print("finview mouse event")
@@ -517,14 +518,15 @@ class DolfinNoteWindow(QMainWindow, form_class):
                 #print("wheel event in lstFinList")
         return QMainWindow.eventFilter(self, source, event)
 
-    def messageBox(self, message):
+    def messageBox(self, message1, message2=''):
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Information)
-        msg.setText(message)
+        msg.setText(message1)
         msg.setWindowTitle("Information")
         msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
         #msg.show()
-        #msg.setDetailedText("The details are as follows:")
+        if message2 != '':
+            msg.setInformativeText(message2)
         msg.exec_()
         #print("value of pressed message box button:", retval)
 
@@ -537,8 +539,7 @@ class DolfinNoteWindow(QMainWindow, form_class):
         self.messageBox("Export YOLO function will be here someday.")
 
     def about(self):
-        self.messageBox(PROGRAM_NAME + " " + PROGRAM_VERSION)
-
+        self.messageBox(PROGRAM_NAME+" "+PROGRAM_VERSION, "Jikhan Jung\nSoojin Jang\nHyun-jin Bae")
 
     def wheelEvent(self, event):
         #print("wheel event")
@@ -653,7 +654,6 @@ class DolfinNoteWindow(QMainWindow, form_class):
     def show_in_map_function(self):
 
         new = 2 # open in a new tab, if possible
-
         # open a public URL, in this case, the webbrowser docs
         #url = "http://docs.python.org/library/webbrowser.html"
 
@@ -667,34 +667,23 @@ class DolfinNoteWindow(QMainWindow, form_class):
         #    self.map_dlg.show()
         #    self.map_dlg.waitUntilReady()
         #    self.map_dlg.setZoom(14)
-        lat, lon = 0, 0
-        lat_str, lon_str = fin_record.latitude, fin_record.longitude
 
-        deg, rest = lat_str.split("°")
-        minute, ns = rest.split("'")
-        plus_minus = 1
-        if ns == 'S':
-            plus_minus = -1
-        lat = (int(deg) + float(minute) / 60) * plus_minus
+        lat, lon = fin_record.get_decimal_latitude_longitude()
 
-        deg, rest = lon_str.split("°")
-        minute, EW = rest.split("'")
-        lon = (int(deg) + float(minute) / 60) * plus_minus
         #print(lat_str, lon_str, lat, lon)
         marker_text = "{} {}".format(fin_record.dolfin_id,fin_record.image_datetime)
         url = "https://maps.google.com/?q={},{}&ll={},{}&z=15".format(lat, lon, lat, lon)
         url = "https://map.kakao.com/link/map/{},{},{}".format(marker_text,lat,lon)
-        
+
         webbrowser.open(url,new=new)
         return
 
-        self.map_dlg.centerAt(lat, lon)
-        self.map_dlg.addMarker(fin_record.dolfin_id, lat, lon, **dict(
-            icon="http://maps.gstatic.com/mapfiles/ridefinder-images/mm_20_red.png",
-            draggable=False,
-            title=fin_record.dolfin_id
-        ))
-
+        #self.map_dlg.centerAt(lat, lon)
+        #self.map_dlg.addMarker(fin_record.dolfin_id, lat, lon, **dict(
+        #    icon="http://maps.gstatic.com/mapfiles/ridefinder-images/mm_20_red.png",
+        #    draggable=False,
+        #    title=fin_record.dolfin_id
+        #))
 
     def refresh_mainview(self):
         #print("pixmap 0:", self.orig_pixmap_list[image_index])
@@ -1037,7 +1026,10 @@ class DolfinNoteWindow(QMainWindow, form_class):
 
                     new_finid = fin_record.dolfin_id
                     if not fin_record.is_fin:
-                        new_finid = BTN_NO_FIN
+                        if fin_record.confidence < 0:
+                            new_finid = BTN_NOT_ASSIGNED
+                        else:
+                            new_finid = BTN_NO_FIN
 
                     if new_finid != '' and new_finid not in self.finid_info.keys():
                         self.add_new_finid_info(new_finid)
@@ -1790,12 +1782,13 @@ class DolfinNoteWindow(QMainWindow, form_class):
     def closeEvent(self, event):
         if self.mainview_dlg is not None:
             self.mainview_dlg.close()
-        if self.map_dlg is not None:
-            self.map_dlg.close()
+        #if self.map_dlg is not None:
+        #    self.map_dlg.close()
 
 if __name__ == "__main__":
     #QApplication : 프로그램을 실행시켜주는 클래스
     app = QApplication(sys.argv)
+    app.setWindowIcon(QIcon('marc_icon.png'))
 
     #WindowClass의 인스턴스 생성
     myWindow = DolfinNoteWindow()
