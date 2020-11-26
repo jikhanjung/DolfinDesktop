@@ -110,6 +110,7 @@ class LoadImages:  # for inference
     def __init__(self, path, img_size=640):
         p = str(Path(path))  # os-agnostic
         p = os.path.abspath(p)  # absolute path
+        print("path:",p)
         if '*' in p:
             files = sorted(glob.glob(p, recursive=True))  # glob
         elif os.path.isdir(p):

@@ -99,7 +99,8 @@ def detect_all_fins(folder_path, image_path_list):
     all_image_fin_list = []
     folder_name = folder_path.name
     if "_" in folder_name:
-        obs_list = folder_name.split("-",2)
+        obs_list = folder_name.split("_",2)
+        print(obs_list)
         if len(obs_list)==2:
             obs_date, obs_location = obs_list
         else:
@@ -194,11 +195,12 @@ def open_folder(folder_name):
 if __name__ == "__main__" :
     opt = getOpt()
 
-    fodler_name = opt.source
+    opt.source = "./20160316_TEST"
+    folder_name = opt.source
     folder_path = Path(folder_name)
 
     image_path_list = open_folder(folder_path)
 
-    all_image_fin_list = detect_all_fins(folder_name, image_path_list)
+    all_image_fin_list = detect_all_fins(folder_path, image_path_list)
 
     save_data(folder_path, image_path_list, all_image_fin_list)
