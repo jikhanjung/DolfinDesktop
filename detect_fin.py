@@ -196,7 +196,8 @@ def open_folder(folder_name):
 if __name__ == "__main__" :
     opt = getOpt()
 
-    opt.source = "./20160316_TEST"
+    if opt.source == '':
+        opt.source = "./20160316_TEST"
     folder_name = opt.source
     folder_path = Path(folder_name)
 
