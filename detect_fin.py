@@ -1,4 +1,4 @@
-﻿import imagesize
+import imagesize
 import os
 import sys
 import glob
@@ -16,7 +16,7 @@ import Yolo5Detector2
 
 from DolfinRecord import DolfinRecord, fieldnames
 
-def get_image_info(self, filename):
+def get_image_info(filename):
     image_info = {'date':'','time':'','latitude':'','longitude':'','map_datum':''}
     i = Image.open(filename)
     ret = {}
@@ -98,6 +98,7 @@ def getOpt():
 def detect_all_fins(folder_path, image_path_list):
     all_image_fin_list = []
     folder_name = folder_path.name
+    obs_date, obs_location, obs_by = '', '', ''
     if "_" in folder_name:
         obs_list = folder_name.split("_",2)
         print(obs_list)
@@ -158,11 +159,11 @@ def save_data(folder_path, image_path_list, all_image_fin_list):
         writer.writeheader()
         for image_index in range(len(image_path_list)):
             
-            fin_record.image_width, fin_record.image_height = imagesize.get(str(image_path_list[image_index]))
+            image_width, image_height = imagesize.get(str(image_path_list[image_index]))
 
             for fin_record in all_image_fin_list[image_index]:
-                writer.writerow({'folder_name':fin_record.folder_name,'image_name': fin_record.image_name, 'image_width': fin_record.image_width,
-                                 'image_height': fin_record.image_height,'class_id': int(fin_record.class_id), 
+                writer.writerow({'folder_name':fin_record.folder_name,'image_name': fin_record.image_name, 'image_width': image_width,
+                                 'image_height': image_height,'class_id': int(fin_record.class_id), 
                                  'fin_index': fin_record.fin_index, 'center_x': fin_record.center_x, 'center_y': fin_record.center_y, 
                                  'width': fin_record.width, 'height': fin_record.height, 'confidence': fin_record.confidence,
                                  'is_fin': fin_record.is_fin, 'image_datetime': fin_record.image_datetime, 

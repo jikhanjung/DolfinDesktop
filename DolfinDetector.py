@@ -401,10 +401,23 @@ class DolfinDetectorWindow(QMainWindow, form_class) :
         self.all_image_fin_list = []
         folder_name = self.working_folder.name
         #print(type(folder_name),folder_name)
-        if "_" in self.working_folder.name:
-            obs_date, obs_location, obs_by = self.working_folder.name.split("_",maxsplit=2)
+
+        if "_" in folder_name:
+            obs_list = folder_name.split("_",2)
+            #print(obs_list)
+            if len(obs_list)==2:
+                obs_date, obs_location = obs_list
+            else:
+                obs_date, obs_location, obs_by = obs_list
         else:
-            obs_date, obs_location, obs_by = '', '', ''
+            obs_date = folder_name
+            obs_location, obs_by = '', ''
+
+
+        #if "_" in self.working_folder.name:
+        #    obs_date, obs_location, obs_by = self.working_folder.name.split("_",maxsplit=2)
+        #else:
+        #    obs_date, obs_location, obs_by = '', '', ''
         #print(obs_date, obs_location, obs_by)
         #return
 
