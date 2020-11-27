@@ -5,7 +5,7 @@ Currently this repository holds files for DolfinNote, a windows application for 
 
 For actual dolphin dorsal fin detection, please take a look at http://github.com/jikhanjung/yolov5.
 
-In collaboration with, and developed primarily for researchers of MARC(Marine Animal Research and Conservation).
+In collaboration with, and developed primarily for researchers of MARC(Marine Animal Research and Conservation https://www.facebook.com/MARCKorea718 ).
 
 Maintained by: Jikhan Jung
 
