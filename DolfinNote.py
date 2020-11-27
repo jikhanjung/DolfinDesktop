@@ -991,7 +991,7 @@ class DolfinNoteWindow(QMainWindow, form_class):
                 if detector.done: break
             detector.close()
             csv_encoding = detector.result['encoding']
-            print( csv_path, detector.result )
+            #print( csv_path, detector.result )
 
             with open(str(csv_path), newline='', encoding=csv_encoding) as csvfile:
                 reader = csv.DictReader(csvfile)
