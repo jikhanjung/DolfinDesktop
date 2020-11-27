@@ -154,7 +154,7 @@ def save_data(folder_path, image_path_list, all_image_fin_list):
     folder_name = folder_path.name
     save_path = str( folder_path.joinpath( folder_name + ".csv" ))
 
-    with open(save_path, 'w', newline='') as csvfile:
+    with open(save_path, 'w', newline='', encoding='utf-8') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         for image_index in range(len(image_path_list)):

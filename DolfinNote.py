@@ -9,6 +9,7 @@ import time
 import math
 from operator import itemgetter, attrgetter
 import webbrowser
+from chardet.universaldetector import UniversalDetector
 
 from PyQt5.QtWidgets import *
 from PyQt5 import uic
@@ -981,7 +982,18 @@ class DolfinNoteWindow(QMainWindow, form_class):
                 #self.finicon_hash = pickle.load(open(icondb_path, "rb"))
 
             i = 0
-            with open(str(csv_path), newline='') as csvfile:
+
+            #detect charset
+            detector = UniversalDetector()
+            detector.reset()
+            for line in open(csv_path, 'rb'):
+                detector.feed(line)
+                if detector.done: break
+            detector.close()
+            csv_encoding = detector.result['encoding']
+            print( csv_path, detector.result )
+
+            with open(str(csv_path), newline='', encoding=csv_encoding) as csvfile:
                 reader = csv.DictReader(csvfile)
                 prev_image_name = ''
                 pixmap = None

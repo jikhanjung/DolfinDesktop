@@ -293,16 +293,16 @@ class DolfinDetectorWindow(QMainWindow, form_class) :
         folder_name = self.working_folder.name
         save_path = str( self.working_folder.joinpath( folder_name + ".csv" ))
 
-        with open(save_path, 'w', newline='') as csvfile:
+        with open(save_path, 'w', newline='', encoding='utf-8') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
             for img_idx in range( len( self.image_path_list ) ):
                 
-                fin_record.image_width, fin_record.image_height = imagesize.get(str(self.image_path_list[img_idx]))
+                image_width, image_height = imagesize.get(str(self.image_path_list[img_idx]))
 
                 for fin_record in self.all_image_fin_list[img_idx]:
-                    writer.writerow({'folder_name':fin_record.folder_name,'image_name': fin_record.image_name, 'image_width': fin_record.image_width,
-                                     'image_height': fin_record.image_height,'class_id': int(fin_record.class_id), 
+                    writer.writerow({'folder_name':fin_record.folder_name,'image_name': fin_record.image_name, 'image_width': image_width,
+                                     'image_height': image_height,'class_id': int(fin_record.class_id), 
                                      'fin_index': fin_record.fin_index, 'center_x': fin_record.center_x, 'center_y': fin_record.center_y, 
                                      'width': fin_record.width, 'height': fin_record.height, 'confidence': fin_record.confidence,
                                      'is_fin': fin_record.is_fin, 'image_datetime': fin_record.image_datetime, 
