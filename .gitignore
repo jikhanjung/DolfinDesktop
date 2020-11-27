@@ -15,3 +15,4 @@ dist/
 __pycache__/
 utils/__pycache__/
 detect_fin.py.bak
+20160316_TEST/
