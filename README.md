@@ -8,4 +8,5 @@ For actual dolphin dorsal fin detection, please take a look at http://github.com
 In collaboration with, and developed primarily for researchers of MARC(Marine Animal Research and Conservation).
 
 Maintained by: Jikhan Jung
+
 Contact: honestjung@gmail.com
