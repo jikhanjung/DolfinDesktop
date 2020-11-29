@@ -59,6 +59,15 @@ form_class = uic.loadUiType("DolfinNote.ui")[0]
 #form_class3 = uic.loadUiType("FinWindow.ui")[0]
 
 class ImageViewDlg(QWidget):
+    '''
+    ImageViewDlg shows the image which contains current fin
+
+    Args:
+        None
+
+    Attributes:
+        lbl_main_view (QLabel): Label that shows the main image
+    '''
     def __init__(self):
         super().__init__()
         #self.setupUi(self)
@@ -95,6 +104,25 @@ class ProgressDialog(QDialog):
         self.setGeometry(600, 400, 400, 210)
 
 class DolfinNoteWindow(QMainWindow, form_class):
+    '''
+    DolfinNoteWindow is the main window of DolfinNote application
+
+    Args:
+        None
+
+    Attributes:
+        fin_model (QStandardItemModel): Dolphin dorsal fin information items are stored here.
+        proxy_model (QSortFilterProxyModel): sorting and filtering model for fin_model
+        current_image_index (int): index of current image
+        current_fin_index0 (int): index of current fin of current image
+        current_fin_record (DolfinRecord): fin record currently selected
+
+        fin_record_hash (dict):
+        finid_info (dict):
+        finicon_hash (dict):
+        image_path_list (list):
+    '''
+
     def __init__(self):
         super().__init__()
         self.setupUi(self)
@@ -231,7 +259,7 @@ class DolfinNoteWindow(QMainWindow, form_class):
         self.sldZoomRatio.hide()
         self.lblZoomRatio.hide()
         self.setWindowTitle(PROGRAM_NAME + " " + PROGRAM_VERSION)
-        self.setWindowIcon(QIcon('marc_icon.png')) 
+        self.setWindowIcon(QIcon('marc_icon.png'))
 
     def finview_mouse_event(self, event):
         #print("finview mouse event")
@@ -320,13 +348,7 @@ class DolfinNoteWindow(QMainWindow, form_class):
                               'x2': min(pos_x2, image_width), 'y2': min(pos_y2, image_height)}
 
         elif(event.type() == QEvent.MouseMove and self.finview_mode in [FV_VIEW, FV_DRAGREADY]):
-
-            #print("mouse move in view or dragready mode")
-            #check cursor-bbox distance
             dist = {}
-            #print(dist, bbox_pos, local_x, finview_pos)
-            #print(self.current_image_index, self.current_fin_index0)
-            #print()
             pos_to_move = []
             x_pos = local_x + finview_pos['x1']
             y_pos = local_y + finview_pos['y1']
