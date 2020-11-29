@@ -124,15 +124,15 @@ class DolfinRecord:
             return self.get_itemname()
         else:
             name = self.get_itemname()
-            if( self.is_fin == False ):
+            if self.is_fin == False:
                 name += ' (No Fin)'
-            elif( self.dolfin_id != '' ):
+            elif self.dolfin_id != '':
                 name += ' (' + self.dolfin_id + ')'
             return name
 
     def get_finname(self):
         return self.get_iconfile_stem()
-    
+
     def get_iconfile_stem(self):
         imagename_stem = str(Path(self.image_name).stem)
 
@@ -160,8 +160,8 @@ class DolfinRecord:
         return lat, lon
 
     def find_matching_record( self, record_list ):
-        dist_list = []
-        coords_list = []
+        #dist_list = []
+        #coords_list = []
         max_iou = 0
         matching_rec = None
         for rec in record_list:
@@ -174,58 +174,58 @@ class DolfinRecord:
 
     def set_info( self, info ):
 
-        if( 'folder_name' in info.keys() ):
+        if 'folder_name' in info.keys():
             self.folder_name = info['folder_name']
-        if( 'image_name' in info.keys() ):
+        if 'image_name' in info.keys():
             self.image_name = info['image_name']
-        if( 'image_width' in info.keys() ):
+        if 'image_width' in info.keys():
             self.image_width = int(info['image_width'])
-        if( 'image_height' in info.keys() ):
+        if 'image_height' in info.keys():
             self.image_height = int(info['image_height'])
-        if( 'class_id' in info.keys() ):
+        if 'class_id' in info.keys():
             self.class_id = int(info['class_id'])
-        if( 'fin_index' in info.keys() ):
+        if 'fin_index' in info.keys():
             self.fin_index = int(info['fin_index'])
-        if( 'center_x' in info.keys() ):
+        if 'center_x' in info.keys():
             self.center_x = float(info['center_x'])
-        if( 'center_y' in info.keys() ):
+        if 'center_y' in info.keys():
             self.center_y = float(info['center_y'])
-        if( 'width' in info.keys() ):
+        if 'width' in info.keys():
             self.width = float(info['width'])
-        if( 'height' in info.keys() ):
+        if 'height' in info.keys():
             self.height = float(info['height'])
-        if( 'confidence' in info.keys() ):
+        if 'confidence' in info.keys():
             self.confidence = float(info['confidence'])
-        if( 'is_fin' in info.keys() ):
-            if( str(info['is_fin']).lower() == 'true' or info['is_fin'] == True):
+        if 'is_fin' in info.keys():
+            if str(info['is_fin']).lower() == 'true' or info['is_fin'] == True:
                 self.is_fin = True
             else:
                 self.is_fin = False
             #print( "record is_fin:", info['image_name'], info['fin_index'], info['is_fin'], self.is_fin)
-        if( 'image_datetime' in info.keys() ):
+        if 'image_datetime' in info.keys():
             self.image_datetime = info['image_datetime']
         #if( 'image_time' in info.keys() ):
         #    self.image_time = info['image_time']
-        if( 'location' in info.keys() ):
+        if 'location' in info.keys():
             self.location = info['location']
-        if( 'latitude' in info.keys() ):
+        if 'latitude' in info.keys():
             self.latitude = info['latitude']
-        if( 'longitude' in info.keys() ):
+        if 'longitude' in info.keys():
             self.longitude = info['longitude']
-        if( 'map_datum' in info.keys() ):
+        if 'map_datum' in info.keys():
             self.map_datum = info['map_datum']
-        if( 'dolfin_id' in info.keys() ):
+        if 'dolfin_id' in info.keys():
             self.dolfin_id = info['dolfin_id']
-        if( 'observed_by' in info.keys() ):
+        if 'observed_by' in info.keys():
             self.observed_by = info['observed_by']
-        if( 'created_by' in info.keys() ):
+        if 'created_by' in info.keys():
             self.created_by = info['created_by']
-        if( 'created_on' in info.keys() ):
+        if 'created_on' in info.keys():
             self.created_on = info['created_on']
-        if( 'modified_by' in info.keys() ):
+        if 'modified_by' in info.keys():
             self.modified_by = info['modified_by']
-        if( 'modified_on' in info.keys() ):
+        if 'modified_on' in info.keys():
             self.modified_on = info['modified_on']
             #print('modified_on setting:', info['modified_on'], self.modified_on)
-        if( 'comment' in info.keys() ):
+        if 'comment' in info.keys():
             self.comment = info['comment']
