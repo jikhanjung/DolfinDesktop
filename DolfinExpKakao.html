@@ -5,9 +5,9 @@
 	<title>Kakao 지도</title>
 </head>
 <body>
-	<div id="finid_div" style="height:100;width:98vw;"></div>
-	<div id="date_div" style="height:100;width:98vw;"></div>
-	<div id="map" style="height:90vh;width:98vw"></div>
+	<div id="date_div" style="position:relative;margin:auto;height:35px;width:30%;z-index:20;"></div>
+	<div id="finid_div" style="position:absolute;left:20px;top:35px;height:90vh;width:10vw;z-index:10;"></div>
+	<div id="map" style="position:absolute;top:0px;left:0px;height:100%;width:100%;z-index:0;"></div>
 	<script type="text/javascript" src="jquery-3.5.1.min.js"></script>
 	<script type="text/javascript" src="http://dapi.kakao.com/v2/maps/sdk.js?appkey=d77a7932b44514f9642821b2c24b2b50"></script>
 	<script type="text/javascript" src="fin_data.js"></script>
@@ -73,6 +73,7 @@ for(key_idx=0;key_idx<key_list.length;key_idx++){
 
 			}
 
+			// 새로운 날짜일 경우 date_hash 에 location_key 추가.
 			date_array = fin_data[idx]['datetime'].split(" ");
 			yyyymmdd = date_array[0]
 			if( !date_hash.hasOwnProperty(yyyymmdd) ){
@@ -96,7 +97,8 @@ for(key_idx=0;key_idx<key_list.length;key_idx++){
 		}
 	}
 }
-add_new_button("All");
+
+
 
 var date_list = Object.keys(date_hash);
 date_list.sort();
@@ -104,6 +106,8 @@ for(idx=0;idx<date_list.length;idx++){
 	add_new_date(date_list[idx]);
 	//console.log( date_list[idx], date_hash[date_list[idx]] );
 }
+add_new_button("All");
+add_new_date("All");
 //alert( Object.keys(location_hash) );
 
 var lat_avr = lat_sum / data_count;
@@ -133,11 +137,13 @@ function add_new_button(fin_id){
 	var new_span = document.createElement("span");
 	var button = document.createElement('button');
 	button.setAttribute("onclick","show_marker('" + fin_id + "');");
+	button.style.width = "60px";
 	button.appendChild(document.createTextNode(fin_id));
 	new_span.appendChild(button);
+	//if( key_idx > 0 && !((key_idx)%2) ) { document.getElementById("finid_div").appendChild(document.createElement('br')); }
 	document.getElementById("finid_div").appendChild(new_span);
-	//if( key_idx > 0 && !((key_idx)%15) ) { document.getElementById("finid_div").appendChild(document.createElement('br')); }
-	document.getElementById("finid_div").appendChild(new_span);
+	//document.getElementById("finid_div").appendChild(new_span);
+	document.getElementById("finid_div").appendChild(document.createElement('br'));
 }
 function add_new_date(observe_date){
 	var new_span = document.createElement("span");
@@ -202,6 +208,27 @@ function show_date(observe_date) {
 		}
 	}
 	map.setBounds(local_bounds);
+}
+
+function distance(lat1, lon1, lat2, lon2 ) {
+	if ((lat1 == lat2) && (lon1 == lon2)) {
+		return 0;
+	}
+	else {
+		var radlat1 = Math.PI * lat1/180;
+		var radlat2 = Math.PI * lat2/180;
+		var theta = lon1-lon2;
+		var radtheta = Math.PI * theta/180;
+		var dist = Math.sin(radlat1) * Math.sin(radlat2) + Math.cos(radlat1) * Math.cos(radlat2) * Math.cos(radtheta);
+		if (dist > 1) {
+			dist = 1;
+		}
+		dist = Math.acos(dist);
+		dist = dist * 180/Math.PI;
+		dist = dist * 60 * 1.1515;
+		dist = dist * 1.609344;
+		return dist;
+	}
 }
 </script>
 </body>
