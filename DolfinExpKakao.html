@@ -5,24 +5,22 @@
 	<title>Kakao 지도</title>
 </head>
 <body>
-	<div id="date_div" style="position:relative;margin:auto;height:35px;width:30%;z-index:20;"></div>
+	<div id="date_div" style="position:relative;margin:auto;height:35px;width:100%;text-align:center;z-index:20;"></div>
 	<div id="finid_div" style="position:absolute;left:20px;top:35px;height:90vh;width:10vw;z-index:10;"></div>
 	<div id="map" style="position:absolute;top:0px;left:0px;height:100%;width:100%;z-index:0;"></div>
 	<script type="text/javascript" src="jquery-3.5.1.min.js"></script>
 	<script type="text/javascript" src="http://dapi.kakao.com/v2/maps/sdk.js?appkey=d77a7932b44514f9642821b2c24b2b50"></script>
 	<script type="text/javascript" src="fin_data.js"></script>
 	<script>
-		var lan = 33.286175;
-		var lon = 126.16297166666666;
 		var container = document.getElementById('map');
 		var options = {
-			center: new kakao.maps.LatLng(lan, lon),
+			center: new kakao.maps.LatLng(33, 126),
 			level: 9
 		};
 
 		var map = new kakao.maps.Map(container, options);
 		var zoomControl = new kakao.maps.ZoomControl();
-map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT);
+		map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT);
 
 var lat_sum=0, lon_sum=0, data_count=0;
 var lat_max=0, lat_min=999, lon_max=0, lon_min=999;
@@ -140,6 +138,7 @@ function add_new_button(fin_id){
 	button.style.width = "60px";
 	button.appendChild(document.createTextNode(fin_id));
 	new_span.appendChild(button);
+	//new_span.style.overflow="scroll";
 	//if( key_idx > 0 && !((key_idx)%2) ) { document.getElementById("finid_div").appendChild(document.createElement('br')); }
 	document.getElementById("finid_div").appendChild(new_span);
 	//document.getElementById("finid_div").appendChild(new_span);
