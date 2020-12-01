@@ -20,6 +20,7 @@ from DolfinRecord import DolfinRecord, fieldnames
 #from DolfinExplorer import QGoogleMap
 #from DolfinNote import DolfinNoteWindow
 import pickle
+import configparser
 
 fsock = open('error.log', 'w')
 sys.stderr = fsock
@@ -200,7 +201,9 @@ class DolfinNoteWindow(QMainWindow, form_class):
         self.working_folder = Path("./")
         self.widget = QWidget()
         self.vbox = QVBoxLayout()
-        self.finid_base_text = 'JTA'
+        self.dolfinid_prefix = ''
+
+        self.readSettings()
 
         self.widget.setLayout(self.vbox)
         self.scrollArea.setWidget(self.widget)
@@ -209,8 +212,8 @@ class DolfinNoteWindow(QMainWindow, form_class):
         self.scrollArea.setAlignment(Qt.AlignTop)
         self.vbox.setAlignment(Qt.AlignTop)
 
-        self.edtNewID.setText(self.finid_base_text)
-        self.edtNewID.setCursorPosition(len(self.finid_base_text))
+        self.edtNewID.setText(self.dolfinid_prefix)
+        self.edtNewID.setCursorPosition(len(self.dolfinid_prefix))
         self.edtNewID.returnPressed.connect(self.new_finid_function)
 
         self.current_image_index = -1
@@ -260,6 +263,22 @@ class DolfinNoteWindow(QMainWindow, form_class):
         self.lblZoomRatio.hide()
         self.setWindowTitle(PROGRAM_NAME + " " + PROGRAM_VERSION)
         self.setWindowIcon(QIcon('marc_icon.png'))
+
+    def writeSettings(self):
+        settings = QSettings(QSettings.IniFormat, QSettings.UserScope,"DiploSoft", "DolfinNote")
+
+        settings.beginGroup("Defaults")
+        settings.setValue("DolfinID prefix", self.dolfinid_prefix)
+        settings.setValue("Working Folder", str(self.working_folder))
+        settings.endGroup()
+
+    def readSettings(self):
+        settings = QSettings(QSettings.IniFormat, QSettings.UserScope,"DiploSoft", "DolfinNote")
+
+        settings.beginGroup("Defaults")
+        self.dolfinid_prefix = settings.value("DolfinID prefix", "JTA")
+        self.working_folder = Path(settings.value("Working Folder", "./"))
+        settings.endGroup()
 
     def finview_mouse_event(self, event):
         #print("finview mouse event")
@@ -837,7 +856,7 @@ class DolfinNoteWindow(QMainWindow, form_class):
             self.proxy_model.setFilterKeyColumn(1)
             self.btnAddNewFin.setEnabled(False)
             #pass
-        elif(text[0:3] == self.finid_base_text or text == BTN_NO_FIN):
+        elif(text[0:3] == self.dolfinid_prefix or text == BTN_NO_FIN):
             self.proxy_model.setFilterRegExp(QRegExp(text, Qt.CaseInsensitive, QRegExp.FixedString))
             self.proxy_model.setFilterKeyColumn(1)
             self.btnAddNewFin.setEnabled(False)
@@ -934,13 +953,13 @@ class DolfinNoteWindow(QMainWindow, form_class):
 
     def new_finid_function(self):
         new_id = self.edtNewID.text()
-        if new_id in self.finid_info.keys() or new_id == self.finid_base_text:
+        if new_id in self.finid_info.keys() or new_id == self.dolfinid_prefix:
             return
 
         self.add_new_finid_info(new_id)
 
-        self.edtNewID.setText(self.finid_base_text)
-        self.edtNewID.setCursorPosition(len(self.finid_base_text))
+        self.edtNewID.setText(self.dolfinid_prefix)
+        self.edtNewID.setCursorPosition(len(self.dolfinid_prefix))
 
     def open_folder_function(self):
         parent_folder = str(self.working_folder.parent)
@@ -1402,11 +1421,11 @@ class DolfinNoteWindow(QMainWindow, form_class):
         #print("text:", text, text[0:3])
         if new_finid == '':
             return
-        if new_finid == self.finid_base_text:
+        if new_finid == self.dolfinid_prefix:
             self.edtDolfinID.setText("")
             self.edtDolfinIDEditedFunction("")
             return
-        if new_finid[0:3] != self.finid_base_text:
+        if new_finid[0:3] != self.dolfinid_prefix:
             self.edtDolfinID.setText("")
             self.edtDolfinIDEditedFunction("")
             return
@@ -1496,13 +1515,13 @@ class DolfinNoteWindow(QMainWindow, form_class):
             return
 
         new_finid = self.edtNewID.text()
-        if new_finid in self.finid_info.keys() or new_finid == self.finid_base_text:
+        if new_finid in self.finid_info.keys() or new_finid == self.dolfinid_prefix:
             return
 
         # 새 폴더, 버튼 추가
         self.add_new_finid_info(new_finid)
-        self.edtNewID.setText(self.finid_base_text)
-        self.edtNewID.setCursorPosition(len(self.finid_base_text))
+        self.edtNewID.setText(self.dolfinid_prefix)
+        self.edtNewID.setCursorPosition(len(self.dolfinid_prefix))
 
         fin_record_hash = self.finid_info[old_finid]['fin_record_hash']
         finname_list = self.finid_info[old_finid]['finname_list'].copy()
@@ -1596,7 +1615,7 @@ class DolfinNoteWindow(QMainWindow, form_class):
         folder_name = self.working_folder.name
         save_path = str(self.working_folder.joinpath(folder_name + ".csv"))
 
-        with open(save_path, 'w', newline='') as csvfile:
+        with open(save_path, 'w', newline='', encoding='utf-8') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
             #print("images:", images)
@@ -1769,7 +1788,7 @@ class DolfinNoteWindow(QMainWindow, form_class):
 
 
     def add_new_finid_info(self, fin_id):
-        if fin_id in self.finid_info.keys() or fin_id == self.finid_base_text:
+        if fin_id in self.finid_info.keys() or fin_id == self.dolfinid_prefix:
             return None
 
         btn = QToolButton()
@@ -1816,6 +1835,7 @@ class DolfinNoteWindow(QMainWindow, form_class):
     def closeEvent(self, event):
         if self.mainview_dlg is not None:
             self.mainview_dlg.close()
+        self.writeSettings()
         #if self.map_dlg is not None:
         #    self.map_dlg.close()
 

@@ -5,13 +5,23 @@
 	<title>DolfinExplorer</title>
 </head>
 <body>
+	<!--div id="timeline" style="width:100%;height:10%;z-index:30;"></div-->
 	<div id="date_div" style="position:relative;margin:auto;height:35px;width:100%;text-align:center;z-index:20;"></div>
 	<div id="finid_div" style="position:absolute;left:20px;top:35px;height:90vh;width:10vw;z-index:10;"></div>
 	<div id="map" style="position:absolute;top:0px;left:0px;height:100%;width:100%;z-index:0;"></div>
 	<script type="text/javascript" src="jquery-3.5.1.min.js"></script>
 	<script type="text/javascript" src="http://dapi.kakao.com/v2/maps/sdk.js?appkey=d77a7932b44514f9642821b2c24b2b50"></script>
 	<script type="text/javascript" src="dolfinid_data.js"></script>
-	<script>
+	<script type="text/javascript" src="https://unpkg.com/vis-timeline@latest/standalone/umd/vis-timeline-graph2d.min.js"></script>
+	<link href="https://unpkg.com/vis-timeline@latest/styles/vis-timeline-graph2d.min.css" rel="stylesheet" type="text/css" />
+	<style type="text/css">
+	  #timeline {
+		width: 100%;
+		height: 100px;
+		border: 1px solid lightgray;
+	  }
+	</style>
+	  <script>
 		var container = document.getElementById('map');
 		var options = {
 			center: new kakao.maps.LatLng(33, 126),
@@ -28,7 +38,7 @@ var key_list = Object.keys(finid_hash);
 var marker_hash = {};
 var bounds = new kakao.maps.LatLngBounds();
 var location_hash = {};
-var date_hash = {};
+var datetime_hash = {};
 key_list.sort()
 
 for(key_idx=0;key_idx<key_list.length;key_idx++){
@@ -73,13 +83,14 @@ for(key_idx=0;key_idx<key_list.length;key_idx++){
 
 			// 새로운 날짜일 경우 date_hash 에 location_key 추가.
 			date_array = fin_data[idx]['datetime'].split(" ");
-			yyyymmdd = date_array[0]
-			if( !date_hash.hasOwnProperty(yyyymmdd) ){
-				date_hash[yyyymmdd] = []
+			new_datetime = date_array[0];
+			//yyyymmdd = date_array[0]
+			if( !datetime_hash.hasOwnProperty(new_datetime) ){
+				datetime_hash[new_datetime] = []
 			}
-			if( !(date_hash[yyyymmdd].includes(location_key)) ) {
-				date_hash_len = date_hash[yyyymmdd].length
-				date_hash[yyyymmdd][date_hash_len] = location_key;
+			if( !(datetime_hash[new_datetime].includes(location_key)) ) {
+				datetime_hash_len = datetime_hash[new_datetime].length
+				datetime_hash[new_datetime][datetime_hash_len] = location_key;
 				//console.log( yyyymmdd, location_key, date_hash[yyyymmdd])
 			}
 
@@ -96,13 +107,19 @@ for(key_idx=0;key_idx<key_list.length;key_idx++){
 	}
 }
 
-
-
-var date_list = Object.keys(date_hash);
-date_list.sort();
-for(idx=0;idx<date_list.length;idx++){
-	add_new_date(date_list[idx]);
-	//console.log( date_list[idx], date_hash[date_list[idx]] );
+var datetime_list = Object.keys(datetime_hash);
+datetime_list.sort();
+var timeline_item_list = [];
+var min_datetime='9999-99-99';
+var max_datetime='0000-00-00';
+for(idx=0;idx<datetime_list.length;idx++){
+	add_new_date(datetime_list[idx]);
+	if( false ){
+		if( min_datetime > datetime_list[idx]){ min_datetime = datetime_list[idx]; }
+		if( max_datetime < datetime_list[idx]){ max_datetime = datetime_list[idx]; }
+		timeline_item_list[timeline_item_list.length] = {id: idx+1, content: datetime_list[idx] + " ("+String(datetime_hash[datetime_list[idx]].length)+")", start: datetime_list[idx]}
+		console.log( idx, datetime_list[idx] );
+	}
 }
 add_new_button("All");
 add_new_date("All");
@@ -117,6 +134,20 @@ var lon_avr = lon_sum / data_count;
 map.setBounds(bounds);
 //alert(fin1_data.length);
 
+if( false ){
+	var container = document.getElementById('timeline');
+	var items = new vis.DataSet( timeline_item_list);
+	var options = { cluster: true };
+
+	// Create a Timeline
+	var timeline = new vis.Timeline(container, items, options);
+	var id_from = 'From';
+	var id_to = 'To';
+	timeline.addCustomTime( new Date(min_datetime+'T00:00:00'), id_from );
+	timeline.setCustomTimeMarker("From", id_from, true);
+	timeline.addCustomTime( new Date(max_datetime+'T23:59:59'), id_to);
+	timeline.setCustomTimeMarker("To", id_to, true);
+}
 // 인포윈도우를 표시하는 클로저를 만드는 함수입니다 
 function makeOverListener(map, marker, infowindow) {
     return function() {
@@ -154,6 +185,16 @@ function add_new_date(observe_date){
 	//if( key_idx > 0 && !((key_idx)%15) ) { document.getElementById("finid_div").appendChild(document.createElement('br')); }
 	document.getElementById("date_div").appendChild(new_span);
 }
+function add_new_date_old(observe_date){
+	var new_span = document.createElement("span");
+	var button = document.createElement('button');
+	button.setAttribute("onclick","show_date('" + observe_date + "');");
+	button.appendChild(document.createTextNode(observe_date));
+	new_span.appendChild(button);
+	document.getElementById("date_div").appendChild(new_span);
+	//if( key_idx > 0 && !((key_idx)%15) ) { document.getElementById("finid_div").appendChild(document.createElement('br')); }
+	document.getElementById("date_div").appendChild(new_span);
+}
 
 
 function show_marker(fin_id) {
@@ -182,7 +223,7 @@ function show_marker(fin_id) {
 
 function show_date(observe_date) {
 	var local_bounds = new kakao.maps.LatLngBounds();
-	var location_list_to_show = date_hash[observe_date];
+	var location_list_to_show = datetime_hash[observe_date];
 	//alert(observe_date);
 	//console.log( observe_date, location_list_to_show );
 	var location_list = Object.keys(location_hash);
