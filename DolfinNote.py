@@ -9,7 +9,6 @@ import time
 import math
 from operator import itemgetter, attrgetter
 import webbrowser
-from chardet.universaldetector import UniversalDetector
 
 from PyQt5.QtWidgets import *
 from PyQt5 import uic
@@ -22,11 +21,11 @@ from DolfinRecord import DolfinRecord, fieldnames
 import pickle
 import configparser
 
-fsock = open('error.log', 'w')
-sys.stderr = fsock
+#fsock = open('error.log', 'w')
+#sys.stderr = fsock
 
 PROGRAM_NAME = "DolfinNote"
-PROGRAM_VERSION = "0.1.2"
+PROGRAM_VERSION = "0.1.3"
 
 FV_VIEW = 0
 FV_DRAGREADY = 1
@@ -58,6 +57,74 @@ form_class = uic.loadUiType("DolfinNote.ui")[0]
 #form_class3 = uic.loadUiType("ImageViewDialog.ui")[0]
 
 #form_class3 = uic.loadUiType("FinWindow.ui")[0]
+
+class PreferencesDialog(QDialog):
+    '''
+    PreferencesDialog shows preferences.
+
+    Args:
+        None
+    
+    Attributes:
+        well..
+    '''
+    def __init__(self,parent):
+        super().__init__()
+        self.setGeometry(QRect(100, 100, 400, 300))
+        self.setWindowTitle("Preferences")
+        #self.lbl_main_view.setMinimumSize(400, 300)
+
+        self.parent = parent
+        self.lblDolfinIDPrefix = QLabel()
+        self.edtDolfinIDPrefix = QLineEdit()
+        self.lblDataFolder = QLabel()
+        self.edtDataFolder = QLineEdit()
+
+        self.btnOkay = QPushButton()
+        self.btnOkay.setText("OK")
+        self.btnOkay.clicked.connect(self.Okay)
+
+        self.btnCancel = QPushButton()
+        self.btnCancel.setText("Cancel")
+        self.btnCancel.clicked.connect(self.Cancel)
+
+        self.layout = QVBoxLayout()
+        self.layout1 = QHBoxLayout()
+        self.layout1.addWidget(self.lblDolfinIDPrefix)
+        self.layout1.addWidget(self.edtDolfinIDPrefix)
+        self.layout2 = QHBoxLayout()
+        self.layout2.addWidget(self.lblDataFolder)
+        self.layout2.addWidget(self.edtDataFolder)
+        self.layout3 = QHBoxLayout()
+        self.layout3.addWidget(self.btnOkay)
+        self.layout3.addWidget(self.btnCancel)
+        self.layout.addLayout(self.layout1)
+        self.layout.addLayout(self.layout2)
+        self.layout.addLayout(self.layout3)
+        self.setLayout(self.layout)
+        self.dolfinid_prefix = ''
+        self.data_folder = ''
+        self.readSettings()
+        self.lblDolfinIDPrefix.setText("Dolfin ID Prefix")
+        self.lblDataFolder.setText("Data Folder")
+        self.edtDolfinIDPrefix.setText(self.dolfinid_prefix)
+        self.edtDataFolder.setText(str(self.data_folder.resolve()))
+
+    def writeSettings(self):
+        self.parent.dolfinid_prefix = self.edtDolfinIDPrefix.text()
+        self.parent.data_folder = Path(self.edtDataFolder.text())
+        #print( self.parent.dolfinid_prefix, self.parent.data_folder)
+
+    def readSettings(self):
+        self.dolfinid_prefix = self.parent.dolfinid_prefix
+        self.data_folder = self.parent.data_folder.resolve()
+
+    def Okay(self):
+        self.writeSettings()
+        self.close()
+
+    def Cancel(self):
+        self.close()
 
 class ImageViewDlg(QWidget):
     '''
@@ -141,11 +208,11 @@ class DolfinNoteWindow(QMainWindow, form_class):
         self.actionCloseupView.triggered.connect(self.setCloseupView)
         self.actionExportFins.triggered.connect(self.export_fins)
         self.actionExportYOLO.triggered.connect(self.export_yolo)
+        self.actionPreferences.triggered.connect(self.open_preferences)
         self.actionAbout.triggered.connect(self.about)
         self.btnMainView.clicked.connect(self.popout_mainview_function)
         self.btnAddNewFin.clicked.connect(self.add_new_fin_function)
         self.btnShowInMap.clicked.connect(self.show_in_map_function)
-
         self.chkShowBbox.clicked.connect(self.show_bbox_clicked)
         self.rbIsFinYes.clicked.connect(self.rbIsFinFunction)
         self.rbIsFinNo.clicked.connect(self.rbIsFinFunction)
@@ -198,9 +265,10 @@ class DolfinNoteWindow(QMainWindow, form_class):
         #self.map_dlg = None
         self.current_modifier = ''
 
-        self.working_folder = Path("./")
         self.widget = QWidget()
         self.vbox = QVBoxLayout()
+
+        self.working_folder = ''
         self.dolfinid_prefix = ''
 
         self.readSettings()
@@ -264,12 +332,17 @@ class DolfinNoteWindow(QMainWindow, form_class):
         self.setWindowTitle(PROGRAM_NAME + " " + PROGRAM_VERSION)
         self.setWindowIcon(QIcon('marc_icon.png'))
 
+    def open_preferences(self):
+        self.preferences_dialog = PreferencesDialog(self)
+        #self.preferences_dialog.parent = self
+        self.preferences_dialog.show()
+
     def writeSettings(self):
         settings = QSettings(QSettings.IniFormat, QSettings.UserScope,"DiploSoft", "DolfinNote")
 
         settings.beginGroup("Defaults")
         settings.setValue("DolfinID prefix", self.dolfinid_prefix)
-        settings.setValue("Working Folder", str(self.working_folder))
+        settings.setValue("Data Folder", str(self.data_folder))
         settings.endGroup()
 
     def readSettings(self):
@@ -277,7 +350,8 @@ class DolfinNoteWindow(QMainWindow, form_class):
 
         settings.beginGroup("Defaults")
         self.dolfinid_prefix = settings.value("DolfinID prefix", "JTA")
-        self.working_folder = Path(settings.value("Working Folder", "./"))
+        self.data_folder = Path(settings.value("Data Folder", "./"))
+        self.working_folder = self.data_folder
         settings.endGroup()
 
     def finview_mouse_event(self, event):
@@ -1024,17 +1098,7 @@ class DolfinNoteWindow(QMainWindow, form_class):
 
             i = 0
 
-            #detect charset
-            detector = UniversalDetector()
-            detector.reset()
-            for line in open(csv_path, 'rb'):
-                detector.feed(line)
-                if detector.done: break
-            detector.close()
-            csv_encoding = detector.result['encoding']
-            #print( csv_path, detector.result )
-
-            with open(str(csv_path), newline='', encoding=csv_encoding) as csvfile:
+            with open(str(csv_path), newline='', encoding='utf-8') as csvfile:
                 reader = csv.DictReader(csvfile)
                 prev_image_name = ''
                 pixmap = None
