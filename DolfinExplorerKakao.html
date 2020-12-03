@@ -12,6 +12,7 @@
 	<script type="text/javascript" src="jquery-3.5.1.min.js"></script>
 	<script type="text/javascript" src="http://dapi.kakao.com/v2/maps/sdk.js?appkey=d77a7932b44514f9642821b2c24b2b50"></script>
 	<script type="text/javascript" src="dolfinid_data.js"></script>
+	<script type="text/javascript" src="dolfinid_occurrence.js"></script>
 	<script type="text/javascript" src="https://unpkg.com/vis-timeline@latest/standalone/umd/vis-timeline-graph2d.min.js"></script>
 	<link href="https://unpkg.com/vis-timeline@latest/styles/vis-timeline-graph2d.min.css" rel="stylesheet" type="text/css" />
 	<style type="text/css">
@@ -21,31 +22,35 @@
 		border: 1px solid lightgray;
 	  }
 	</style>
-	  <script>
-		var container = document.getElementById('map');
-		var options = {
-			center: new kakao.maps.LatLng(33, 126),
-			level: 9
-		};
+	<script>
 
-		var map = new kakao.maps.Map(container, options);
-		var zoomControl = new kakao.maps.ZoomControl();
-		map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT);
+var container = document.getElementById('map');
+var options = {
+	center: new kakao.maps.LatLng(33, 126),
+	level: 9
+};
+
+var map = new kakao.maps.Map(container, options);
+var bounds = new kakao.maps.LatLngBounds();
+var zoomControl = new kakao.maps.ZoomControl();
+map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT);
 
 var lat_sum=0, lon_sum=0, data_count=0;
-var lat_max=0, lat_min=999, lon_max=0, lon_min=999;
+
 var key_list = Object.keys(finid_hash);
-var marker_hash = {};
-var bounds = new kakao.maps.LatLngBounds();
-var location_hash = {};
-var datetime_hash = {};
 key_list.sort()
+
+var marker_hash = {};
+var occurrence_hash = {};
+var date_list = [];
+var show_finid_hash = {};
+var show_date_hash = {};
 
 for(key_idx=0;key_idx<key_list.length;key_idx++){
 	var fin_data = finid_hash[key_list[key_idx]];
 	var marker_list = [];
 	var fin_id = key_list[key_idx];
-	add_new_button(fin_id);
+	add_new_finid(fin_id);
 	for(idx=0;idx<fin_data.length;idx++){
 		if( fin_data[idx]['latitude'] > 0 ){
 			//alert(fin_data[idx]['datetime']);
@@ -58,70 +63,38 @@ for(key_idx=0;key_idx<key_list.length;key_idx++){
 			data_count += 1;
 
 			location_key = lat + '_' + lon;
-			if(!location_hash.hasOwnProperty(location_key)){
-
-				var marker_instance = new kakao.maps.Marker({position: marker_pos});
-				var div_instance = '<div class="label" id="' + location_key + '"></div>';
-				var overlay_instance = new kakao.maps.CustomOverlay({'position': marker_pos,'marker': marker_instance,'content': div_instance});
-				var iwContent = '<div style="padding:5px;"></div>';
-				var iwPosition = marker_pos;
-				var infowindow_instance = new kakao.maps.InfoWindow({'position' : marker_pos, 'content' : div_instance, 'removable' : true});
-				location_hash[location_key] = { 'marker': marker_instance,
-												'fin_hash': {},
-												'overlay': overlay_instance,
-												'infowindow': infowindow_instance
-											  };
-				location_hash[location_key]['marker'].setMap(map);
-				//overlay_instance.setMap(map);
-				bounds.extend(marker_pos);
+			if(!occurrence_hash.hasOwnProperty(location_key)){
+				var occurrence = new dolfin_occurrence( lat, lon );
+				occurrence.set_map(map);
+				bounds.extend(occurrence.position);
 
 				//kakao.maps.event.addListener(location_hash[location_key]['marker'], 'click', function() { alert(location_key); location_hash[location_key]['overlay'].open(map); } );
-				kakao.maps.event.addListener(marker_instance, 'mouseover', makeOverListener(map, marker_instance, infowindow_instance));
-    			kakao.maps.event.addListener(marker_instance, 'mouseout', makeOutListener(infowindow_instance));
-
+				kakao.maps.event.addListener(occurrence.marker_instance, 'mouseover', makeOverListener(map, occurrence.marker_instance, occurrence.infowindow_instance));
+				kakao.maps.event.addListener(occurrence.marker_instance, 'mouseout', makeOutListener(occurrence.infowindow_instance));
+				occurrence_hash[location_key] = occurrence;
 			}
 
 			// 새로운 날짜일 경우 date_hash 에 location_key 추가.
-			date_array = fin_data[idx]['datetime'].split(" ");
-			new_datetime = date_array[0];
+			datetime_array = fin_data[idx]['datetime'].split(" ");
+			current_date = datetime_array[0];
 			//yyyymmdd = date_array[0]
-			if( !datetime_hash.hasOwnProperty(new_datetime) ){
-				datetime_hash[new_datetime] = []
+			if( !date_list.includes(current_date) ){
+				date_list[date_list.length] = current_date;
 			}
-			if( !(datetime_hash[new_datetime].includes(location_key)) ) {
-				datetime_hash_len = datetime_hash[new_datetime].length
-				datetime_hash[new_datetime][datetime_hash_len] = location_key;
-				//console.log( yyyymmdd, location_key, date_hash[yyyymmdd])
-			}
-
-			fin_hash = location_hash[location_key]['fin_hash'];
-			if( !fin_hash.hasOwnProperty(fin_id)){
-				fin_hash[fin_id] = []
-			}
-			fin_hash[fin_id][fin_hash[fin_id].length] = fin_data[idx];
-			fin_list = Object.keys(fin_hash);
-			
-			location_hash[location_key]['infowindow'].setContent('<div class="label" id="' + location_key + '">' + fin_list.join(", ") + '</div>');
-
+			occurrence_hash[location_key].add_occurrence(fin_id, current_date);
 		}
 	}
 }
 
-var datetime_list = Object.keys(datetime_hash);
-datetime_list.sort();
+date_list.sort();
 var timeline_item_list = [];
 var min_datetime='9999-99-99';
 var max_datetime='0000-00-00';
-for(idx=0;idx<datetime_list.length;idx++){
-	add_new_date(datetime_list[idx]);
-	if( false ){
-		if( min_datetime > datetime_list[idx]){ min_datetime = datetime_list[idx]; }
-		if( max_datetime < datetime_list[idx]){ max_datetime = datetime_list[idx]; }
-		timeline_item_list[timeline_item_list.length] = {id: idx+1, content: datetime_list[idx] + " ("+String(datetime_hash[datetime_list[idx]].length)+")", start: datetime_list[idx]}
-		console.log( idx, datetime_list[idx] );
-	}
+for(idx=0;idx<date_list.length;idx++){
+	add_new_date(date_list[idx]);
+	show_date_hash[date_list[idx]] = true;
 }
-add_new_button("All");
+add_new_finid("All");
 add_new_date("All");
 //alert( Object.keys(location_hash) );
 
@@ -134,20 +107,6 @@ var lon_avr = lon_sum / data_count;
 map.setBounds(bounds);
 //alert(fin1_data.length);
 
-if( false ){
-	var container = document.getElementById('timeline');
-	var items = new vis.DataSet( timeline_item_list);
-	var options = { cluster: true };
-
-	// Create a Timeline
-	var timeline = new vis.Timeline(container, items, options);
-	var id_from = 'From';
-	var id_to = 'To';
-	timeline.addCustomTime( new Date(min_datetime+'T00:00:00'), id_from );
-	timeline.setCustomTimeMarker("From", id_from, true);
-	timeline.addCustomTime( new Date(max_datetime+'T23:59:59'), id_to);
-	timeline.setCustomTimeMarker("To", id_to, true);
-}
 // 인포윈도우를 표시하는 클로저를 만드는 함수입니다 
 function makeOverListener(map, marker, infowindow) {
     return function() {
@@ -162,13 +121,68 @@ function makeOutListener(infowindow) {
     };
 }
 
-function add_new_button(fin_id){
+function toggle_finid(fin_id){
+	var cbx = document.getElementById(fin_id+"checkbox");
+	checked_value = cbx.checked;
+	show_finid_hash[fin_id] = checked_value;
+	if( fin_id == 'All') {
+		var l_finid_list = Object.keys(show_finid_hash);
+		for(idx=0;idx<l_finid_list.length;idx++){
+			cbx = document.getElementById(l_finid_list[idx]+"checkbox");
+			cbx.checked = checked_value;
+			show_finid_hash[l_finid_list[idx]] = checked_value;
+		}
+	}
+	filter_occurrences();
+}
+function filter_occurrences(){
+	var show_finid_list = [];
+	var l_finid_list = Object.keys(show_finid_hash);
+	for(idx=0;idx<l_finid_list.length;idx++){
+		if(show_finid_hash[l_finid_list[idx]]){
+			show_finid_list[show_finid_list.length] = l_finid_list[idx];
+		}
+	}
+	//console.log(l_finid_list, show_finid_list);
+	var show_date_list = [];
+	var l_date_list = Object.keys(show_date_hash);
+	for(idx=0;idx<l_date_list.length;idx++){
+		if(show_date_hash[l_date_list[idx]]){
+			show_date_list[show_date_list.length] = l_date_list[idx];
+		}
+	}
+	//console.log(l_date_list);
+	var local_bounds = new kakao.maps.LatLngBounds();
+	var bounds_count = 0;
+	var location_list = Object.keys(occurrence_hash);
+	for(idx=0;idx<location_list.length;idx++){
+		var location_key = location_list[idx];
+		occurrence_hash[location_key].set_visibility(show_finid_list, show_date_list);
+		if(occurrence_hash[location_key].visible) {
+			occurrence_hash[location_key].set_map(map);
+			local_bounds.extend(occurrence_hash[location_key].position);
+			bounds_count += 1;
+		} else {
+			occurrence_hash[location_key].set_map(null);
+		}
+	}
+	if( bounds_count > 0 ) {
+		map.setBounds(local_bounds);
+	}	
+}
+
+function add_new_finid(fin_id){
+	if( fin_id != 'All' ){show_finid_hash[fin_id] = true;}
 	var new_span = document.createElement("span");
-	var button = document.createElement('button');
-	button.setAttribute("onclick","show_marker('" + fin_id + "');");
-	button.style.width = "60px";
-	button.appendChild(document.createTextNode(fin_id));
-	new_span.appendChild(button);
+	var checkbox = document.createElement('input');
+	checkbox.setAttribute("onclick","toggle_finid('" + fin_id + "');");
+	checkbox.setAttribute("type","checkbox");
+	checkbox.setAttribute("id",fin_id+"checkbox");
+	checkbox.checked = true;
+	//ch.style.width = "60px";
+	var text_node = document.createTextNode(fin_id);
+	new_span.appendChild(checkbox);
+	new_span.appendChild(text_node);
 	//new_span.style.overflow="scroll";
 	//if( key_idx > 0 && !((key_idx)%2) ) { document.getElementById("finid_div").appendChild(document.createElement('br')); }
 	document.getElementById("finid_div").appendChild(new_span);
@@ -185,91 +199,22 @@ function add_new_date(observe_date){
 	//if( key_idx > 0 && !((key_idx)%15) ) { document.getElementById("finid_div").appendChild(document.createElement('br')); }
 	document.getElementById("date_div").appendChild(new_span);
 }
-function add_new_date_old(observe_date){
-	var new_span = document.createElement("span");
-	var button = document.createElement('button');
-	button.setAttribute("onclick","show_date('" + observe_date + "');");
-	button.appendChild(document.createTextNode(observe_date));
-	new_span.appendChild(button);
-	document.getElementById("date_div").appendChild(new_span);
-	//if( key_idx > 0 && !((key_idx)%15) ) { document.getElementById("finid_div").appendChild(document.createElement('br')); }
-	document.getElementById("date_div").appendChild(new_span);
-}
-
-
-function show_marker(fin_id) {
-	var local_bounds = new kakao.maps.LatLngBounds();
-	var location_list = Object.keys(location_hash);
-	for(location_idx=0;location_idx<location_list.length;location_idx++){
-		var location_key = location_list[location_idx];
-		var location_info = location_hash[location_key];
-		var pos = null;
-		if( fin_id == 'All' ) {
-			location_info['marker'].setMap(map);
-			pos = location_info['marker'].getPosition();
-		} else if(!location_info['fin_hash'].hasOwnProperty(fin_id)){
-			location_info['marker'].setMap(null);
-		} else {
-			location_info['marker'].setMap(map);
-			pos = location_info['marker'].getPosition();
-		}
-		if( pos != null ){
-			local_bounds.extend(pos);
-			//bounds.extend(marker_pos);
-		}
-	}
-	map.setBounds(local_bounds);
-}
 
 function show_date(observe_date) {
-	var local_bounds = new kakao.maps.LatLngBounds();
-	var location_list_to_show = datetime_hash[observe_date];
-	//alert(observe_date);
-	//console.log( observe_date, location_list_to_show );
-	var location_list = Object.keys(location_hash);
-	for(location_idx=0;location_idx<location_list.length;location_idx++){
-		var location_key = location_list[location_idx];
-		var location_info = location_hash[location_key];
-		var pos = null;
-		//console.log( location_key, location_list_to_show );
-
-		if( observe_date == 'All' ) {
-			location_info['marker'].setMap(map);
-			pos = location_info['marker'].getPosition();
-		} else if( location_list_to_show.includes(location_key) ){
-			location_info['marker'].setMap(map);
-			pos = location_info['marker'].getPosition();
+	
+	var show_date_list = [];
+	var l_date_list = Object.keys(show_date_hash);
+	for(idx=0;idx<l_date_list.length;idx++){
+		if( l_date_list[idx] == observe_date || observe_date == 'All'){
+			show_date_hash[l_date_list[idx]] = true;
 		} else {
-			location_info['marker'].setMap(null);
-		}
-		if( pos != null ){
-			local_bounds.extend(pos);
-			//bounds.extend(marker_pos);
+			show_date_hash[l_date_list[idx]] = false;
 		}
 	}
-	map.setBounds(local_bounds);
+	filter_occurrences();
 }
 
-function distance(lat1, lon1, lat2, lon2 ) {
-	if ((lat1 == lat2) && (lon1 == lon2)) {
-		return 0;
-	}
-	else {
-		var radlat1 = Math.PI * lat1/180;
-		var radlat2 = Math.PI * lat2/180;
-		var theta = lon1-lon2;
-		var radtheta = Math.PI * theta/180;
-		var dist = Math.sin(radlat1) * Math.sin(radlat2) + Math.cos(radlat1) * Math.cos(radlat2) * Math.cos(radtheta);
-		if (dist > 1) {
-			dist = 1;
-		}
-		dist = Math.acos(dist);
-		dist = dist * 180/Math.PI;
-		dist = dist * 60 * 1.1515;
-		dist = dist * 1.609344;
-		return dist;
-	}
-}
+
 </script>
 </body>
 </html>
