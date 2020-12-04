@@ -13,6 +13,8 @@ class dolfin_occurrence {
         this.longitude = longitude;
         this.occurrence_data = {};
         this.finid_list = [];
+        this.display_hash = {};
+        this.display_row = 0;
         this.visible = true;
         this.position  = new kakao.maps.LatLng(this.latitude, this.longitude);
         this.marker_instance = new kakao.maps.Marker({position: this.position});
@@ -45,6 +47,7 @@ class dolfin_occurrence {
     }
     set_visibility(finid_list,date_list){
         //console.log(this);
+        this.reset_display();
         this.visible = false;
         for(var fidx=0;fidx<finid_list.length;fidx++){
             if(this.finid_list.includes(finid_list[fidx])) {
@@ -52,10 +55,52 @@ class dolfin_occurrence {
                 for(var didx=0;didx<date_list.length;didx++){
                     if(occ_date_list.includes(date_list[didx])) {
                         this.visible = true;
+                        this.add_display(finid_list[fidx],date_list[didx]);
                     }
                 }
             }
         }
+        this.infowindow_instance.setContent(this.div_content);
+    }
+    reset_display(){
+        this.display_hash = {};
+        this.div_content = document.createElement('div');
+        this.div_content.style.fontSize = '12px';
+        this.div_content.style.width = '150px';
+        this.div_content.style.height = '20px';
+        this.div_content.style.padding = '3px';
+        this.display_row = 0;
+    }
+    add_display(a_finid, a_date){
+        if( this.display_row > 0 ){this.div_content.appendChild(document.createElement('br'));}
+        this.div_content.appendChild(document.createTextNode(a_finid + " " + a_date));
+        this.display_row += 1;
+        this.div_content.style.height = String( 15 * this.display_row ) + 'px';
+    }
+    set_display(a_finid, a_date){
+        //return
+        //display_hash = this.display_hash;
+        //console.log(this, this.display_hash);
+        key_list = Object.keys(this.display_hash);
+        //console.log(key_list);
+        if(!(key_list.includes(a_finid))){
+            this.display_hash[a_finid] = [];
+        }
+        if(!(this.display_hash[a_finid].includes(a_date))){
+            this.display_hash[a_finid][this.display_hash[a_finid].length] = a_date;
+            this.display_hash[a_finid].sort();
+        }
+	    var div_element = document.createElement('div');
+        var finid_list = Object.keys(this.display_hash);
+        var div_text_list = [];
+        finid_list.sort();
+        for(idx=0;idx<finid_list.length;idx++){
+            var date_list = this.display_hash[finid_list[idx]];
+            var date_text = date_list.join(", ");
+            var tn = document.createTextNode(finid_list[idx] + "(" + date_text + ")<br/>");
+            div_element.appendChild(tn);
+        }
+        this.infowindow_instance.setContent(div_element);
     }
     distance(lat1, lon1, lat2, lon2 ) {
         if ((lat1 == lat2) && (lon1 == lon2)) {

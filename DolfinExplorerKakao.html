@@ -14,8 +14,8 @@
 	<script type="text/javascript" src="http://dapi.kakao.com/v2/maps/sdk.js?appkey=d77a7932b44514f9642821b2c24b2b50"></script>
 	<script type="text/javascript" src="dolfinid_data.js"></script>
 	<script type="text/javascript" src="dolfinid_occurrence.js"></script>
-	<script type="text/javascript" src="https://unpkg.com/vis-timeline@latest/standalone/umd/vis-timeline-graph2d.min.js"></script>
-	<link href="https://unpkg.com/vis-timeline@latest/styles/vis-timeline-graph2d.min.css" rel="stylesheet" type="text/css" />
+	<!--script type="text/javascript" src="https://unpkg.com/vis-timeline@latest/standalone/umd/vis-timeline-graph2d.min.js"></script-->
+	<!--link href="https://unpkg.com/vis-timeline@latest/styles/vis-timeline-graph2d.min.css" rel="stylesheet" type="text/css" /-->
 	<style type="text/css">
 	  #timeline {
 		width: 100%;
@@ -30,6 +30,7 @@
 		border: 1px solid #fff;
 		background-color: transparent;
     	padding: 5px;
+		text-align-last:center;
 	  }
 
 	</style>
@@ -99,7 +100,7 @@ for(key_idx=0;key_idx<key_list.length;key_idx++){
 	}
 }
 date_list.sort()
-add_select_box(date_list);
+add_select_date_box(date_list);
 filter_date();
 //add_new_date("All");
 //alert( Object.keys(location_hash) );
@@ -127,38 +128,27 @@ function makeOutListener(infowindow) {
     };
 }
 
-function toggle_finid(fin_id){
-	var cbx = document.getElementById(fin_id+"checkbox");
-	checked_value = cbx.checked;
-	show_finid_hash[fin_id] = checked_value;
-	if( fin_id == 'All') {
-		var l_finid_list = Object.keys(show_finid_hash);
-		for(idx=0;idx<l_finid_list.length;idx++){
-			cbx = document.getElementById(l_finid_list[idx]+"checkbox");
-			cbx.checked = checked_value;
-			show_finid_hash[l_finid_list[idx]] = checked_value;
-		}
-	}
-	filter_occurrences();
-}
-
 function filter_occurrences(){
-	var show_finid_list = [];
-	var l_finid_list = Object.keys(show_finid_hash);
-	for(idx=0;idx<l_finid_list.length;idx++){
-		if(show_finid_hash[l_finid_list[idx]]){
-			show_finid_list[show_finid_list.length] = l_finid_list[idx];
-		}
-	}
-	//console.log(l_finid_list, show_finid_list);
 	var show_date_list = [];
-	var l_date_list = Object.keys(show_date_hash);
-	for(idx=0;idx<l_date_list.length;idx++){
-		if(show_date_hash[l_date_list[idx]]){
-			show_date_list[show_date_list.length] = l_date_list[idx];
+	var show_finid_list = [];
+	var date_select = document.getElementById("date_select");
+	option_list = date_select.options;
+	for(idx=0;idx<option_list.length;idx++){
+		if(option_list[idx].selected){
+			show_date_list[show_date_list.length] = option_list[idx].value;
+			//console.log(option_list[idx]);
 		}
 	}
-	//console.log(l_date_list);
+
+	var finid_select = document.getElementById("finid_select");
+	option_list = finid_select.options;
+	for(idx=0;idx<option_list.length;idx++){
+		if(option_list[idx].selected){
+			show_finid_list[show_finid_list.length] = option_list[idx].value;
+			//console.log(option_list[idx]);
+		}
+	}
+
 	var local_bounds = new kakao.maps.LatLngBounds();
 	var bounds_count = 0;
 	var location_list = Object.keys(occurrence_hash);
@@ -178,26 +168,7 @@ function filter_occurrences(){
 	}	
 }
 
-function add_new_finid(fin_id){
-	if( fin_id != 'All' ){show_finid_hash[fin_id] = true;}
-	var new_span = document.createElement("span");
-	var checkbox = document.createElement('input');
-	checkbox.setAttribute("onclick","toggle_finid('" + fin_id + "');");
-	checkbox.setAttribute("type","checkbox");
-	checkbox.setAttribute("id",fin_id+"checkbox");
-	checkbox.checked = true;
-	//ch.style.width = "60px";
-	var text_node = document.createTextNode(fin_id);
-	new_span.appendChild(checkbox);
-	new_span.appendChild(text_node);
-	//new_span.style.overflow="scroll";
-	//if( key_idx > 0 && !((key_idx)%2) ) { document.getElementById("finid_div").appendChild(document.createElement('br')); }
-	document.getElementById("finid_div").appendChild(new_span);
-	//document.getElementById("finid_div").appendChild(new_span);
-	document.getElementById("finid_div").appendChild(document.createElement('br'));
-}
-
-function add_select_box(a_date_list){
+function add_select_date_box(a_date_list){
 	var input_box = document.createElement('select');
 	//input_box.setAttribute("onclick","toggle_finid('" + fin_id + "');");
 	input_box.multiple = true;
@@ -222,7 +193,7 @@ function filter_date(){
 	for(idx=0;idx<option_list.length;idx++){
 		if(option_list[idx].selected){
 			selected_date_list[selected_date_list.length] = option_list[idx].value;
-			console.log(option_list[idx]);
+			//console.log(option_list[idx]);
 		}
 	}
 	//console.log(selected_date_list);
@@ -252,42 +223,10 @@ function filter_date(){
 		input_box.appendChild(l_option);
 	}
 	input_box.setAttribute("size",total_finid_list.length);
-
+	input_box.setAttribute("onChange","javascript:filter_occurrences();");
 	document.getElementById("select_div").appendChild(input_box);
-}
-
-function add_new_date(observe_date){
-	var new_span = document.createElement("span");
-	var checkbox = document.createElement('input');
-	checkbox.setAttribute("onclick","toggle_date('" + observe_date + "');");
-	checkbox.appendChild(document.createTextNode(observe_date));
-	checkbox.setAttribute("type","checkbox");
-	checkbox.setAttribute("id",fin_id+"checkbox");
-	checkbox.checked = true;
-	var text_node = document.createTextNode(observe_date);
-
-	new_span.appendChild(checkbox);
-	new_span.appendChild(text_node);
-	document.getElementById("date_div").appendChild(new_span);
-	//if( key_idx > 0 && !((key_idx)%15) ) { document.getElementById("finid_div").appendChild(document.createElement('br')); }
-	document.getElementById("date_div").appendChild(document.createElement('br'));
-}
-
-function show_date(observe_date) {
-	
-	var show_date_list = [];
-	var l_date_list = Object.keys(show_date_hash);
-	for(idx=0;idx<l_date_list.length;idx++){
-		if( l_date_list[idx] == observe_date || observe_date == 'All'){
-			show_date_hash[l_date_list[idx]] = true;
-		} else {
-			show_date_hash[l_date_list[idx]] = false;
-		}
-	}
 	filter_occurrences();
 }
-
-
 </script>
 </body>
 </html>
