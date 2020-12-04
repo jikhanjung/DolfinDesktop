@@ -25,6 +25,9 @@ from DolfinRecord import DolfinRecord, fieldnames
 
 form_class = uic.loadUiType("DolfinExtractor.ui")[0]
 
+PROGRAM_NAME = "DolfinExtractor"
+PROGRAM_VERSION = "0.0.1"
+
 class DolfinExtractorWindow(QMainWindow, form_class):
     '''
     DolfinExtractorWindow is the main window of DolfinExtractor application
@@ -47,6 +50,8 @@ class DolfinExtractorWindow(QMainWindow, form_class):
         self.path_list = []
         self.checkbox_list = []
         self.working_folder = Path("./")
+        self.setWindowTitle(PROGRAM_NAME + " " + PROGRAM_VERSION)
+        self.setWindowIcon(QIcon('marc_icon.png'))
 
         self.set_table_header()
 

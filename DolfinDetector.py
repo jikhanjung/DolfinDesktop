@@ -22,7 +22,7 @@ from PyQt5.QtCore import *
 from DolfinRecord import DolfinRecord, fieldnames
 
 PROGRAM_NAME = "DolfinDetector"
-PROGRAM_VERSION = "0.0.1"
+PROGRAM_VERSION = "0.0.2"
 
 #UI파일 연결
 #단, UI파일은 Python 코드 파일과 같은 디렉토리에 위치해야한다.
@@ -71,6 +71,8 @@ class DolfinDetectorWindow(QMainWindow, form_class) :
         self.temp_bbox = None
         self.zoom_ratio = 2
         self.bbox_color = { 'x1': QColor(255,0,0), 'x2': QColor(255,0,0), 'y1': QColor(255,0,0), 'y2': QColor(255,0,0) }
+        self.setWindowTitle(PROGRAM_NAME + " " + PROGRAM_VERSION)
+        self.setWindowIcon(QIcon('marc_icon.png'))
 
     def refresh_finview(self):
         image_index = self.current_image_index
