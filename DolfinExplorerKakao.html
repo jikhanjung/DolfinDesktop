@@ -6,21 +6,33 @@
 </head>
 <body>
 	<!--div id="timeline" style="width:100%;height:10%;z-index:30;"></div-->
-	<div id="date_div" style="position:relative;margin:auto;height:35px;width:100%;text-align:center;z-index:20;"></div>
-	<div id="finid_div" style="position:absolute;left:20px;top:35px;height:90vh;width:10vw;z-index:10;"></div>
+	<!--div id="date_div" style="position:relative;margin:auto;height:35px;width:100%;text-align:center;z-index:20;"></div-->
+	<div id="select_div" style="position:absolute;left:20px;top:20px;height:90vh;width:120px;z-index:10;"></div>
+	<!--div id="finid_div" style="position:absolute;left:130px;top:20px;height:90vh;width:10vw;z-index:20;"></div-->
 	<div id="map" style="position:absolute;top:0px;left:0px;height:100%;width:100%;z-index:0;"></div>
 	<script type="text/javascript" src="jquery-3.5.1.min.js"></script>
 	<script type="text/javascript" src="http://dapi.kakao.com/v2/maps/sdk.js?appkey=d77a7932b44514f9642821b2c24b2b50"></script>
 	<script type="text/javascript" src="dolfinid_data.js"></script>
 	<script type="text/javascript" src="dolfinid_occurrence.js"></script>
-	<script type="text/javascript" src="https://unpkg.com/vis-timeline@latest/standalone/umd/vis-timeline-graph2d.min.js"></script>
-	<link href="https://unpkg.com/vis-timeline@latest/styles/vis-timeline-graph2d.min.css" rel="stylesheet" type="text/css" />
+	<!--script type="text/javascript" src="https://unpkg.com/vis-timeline@latest/standalone/umd/vis-timeline-graph2d.min.js"></script-->
+	<!--link href="https://unpkg.com/vis-timeline@latest/styles/vis-timeline-graph2d.min.css" rel="stylesheet" type="text/css" /-->
 	<style type="text/css">
 	  #timeline {
 		width: 100%;
 		height: 100px;
 		border: 1px solid lightgray;
 	  }
+	  #date_select, #finid_select {
+		  overflow-y: auto;
+		  width: 85px;
+	  }
+	  select {
+		border: 1px solid #fff;
+		background-color: transparent;
+    	padding: 5px;
+		text-align-last:center;
+	  }
+
 	</style>
 	<script>
 
@@ -42,15 +54,15 @@ key_list.sort()
 
 var marker_hash = {};
 var occurrence_hash = {};
-var date_list = [];
 var show_finid_hash = {};
 var show_date_hash = {};
+var date_finid_hash = {};
 
 for(key_idx=0;key_idx<key_list.length;key_idx++){
 	var fin_data = finid_hash[key_list[key_idx]];
 	var marker_list = [];
 	var fin_id = key_list[key_idx];
-	add_new_finid(fin_id);
+	//add_new_finid(fin_id);
 	for(idx=0;idx<fin_data.length;idx++){
 		if( fin_data[idx]['latitude'] > 0 ){
 			//alert(fin_data[idx]['datetime']);
@@ -78,24 +90,19 @@ for(key_idx=0;key_idx<key_list.length;key_idx++){
 			datetime_array = fin_data[idx]['datetime'].split(" ");
 			current_date = datetime_array[0];
 			//yyyymmdd = date_array[0]
+			date_list = Object.keys(date_finid_hash);
 			if( !date_list.includes(current_date) ){
-				date_list[date_list.length] = current_date;
+				date_finid_hash[current_date] = []; //list[date_list.length] = current_date;
 			}
+			date_finid_hash[current_date][date_finid_hash[current_date].length] = fin_id;
 			occurrence_hash[location_key].add_occurrence(fin_id, current_date);
 		}
 	}
 }
-
-date_list.sort();
-var timeline_item_list = [];
-var min_datetime='9999-99-99';
-var max_datetime='0000-00-00';
-for(idx=0;idx<date_list.length;idx++){
-	add_new_date(date_list[idx]);
-	show_date_hash[date_list[idx]] = true;
-}
-add_new_finid("All");
-add_new_date("All");
+date_list.sort()
+add_select_date_box(date_list);
+filter_date();
+//add_new_date("All");
 //alert( Object.keys(location_hash) );
 
 var lat_avr = lat_sum / data_count;
@@ -121,37 +128,27 @@ function makeOutListener(infowindow) {
     };
 }
 
-function toggle_finid(fin_id){
-	var cbx = document.getElementById(fin_id+"checkbox");
-	checked_value = cbx.checked;
-	show_finid_hash[fin_id] = checked_value;
-	if( fin_id == 'All') {
-		var l_finid_list = Object.keys(show_finid_hash);
-		for(idx=0;idx<l_finid_list.length;idx++){
-			cbx = document.getElementById(l_finid_list[idx]+"checkbox");
-			cbx.checked = checked_value;
-			show_finid_hash[l_finid_list[idx]] = checked_value;
-		}
-	}
-	filter_occurrences();
-}
 function filter_occurrences(){
-	var show_finid_list = [];
-	var l_finid_list = Object.keys(show_finid_hash);
-	for(idx=0;idx<l_finid_list.length;idx++){
-		if(show_finid_hash[l_finid_list[idx]]){
-			show_finid_list[show_finid_list.length] = l_finid_list[idx];
-		}
-	}
-	//console.log(l_finid_list, show_finid_list);
 	var show_date_list = [];
-	var l_date_list = Object.keys(show_date_hash);
-	for(idx=0;idx<l_date_list.length;idx++){
-		if(show_date_hash[l_date_list[idx]]){
-			show_date_list[show_date_list.length] = l_date_list[idx];
+	var show_finid_list = [];
+	var date_select = document.getElementById("date_select");
+	option_list = date_select.options;
+	for(idx=0;idx<option_list.length;idx++){
+		if(option_list[idx].selected){
+			show_date_list[show_date_list.length] = option_list[idx].value;
+			//console.log(option_list[idx]);
 		}
 	}
-	//console.log(l_date_list);
+
+	var finid_select = document.getElementById("finid_select");
+	option_list = finid_select.options;
+	for(idx=0;idx<option_list.length;idx++){
+		if(option_list[idx].selected){
+			show_finid_list[show_finid_list.length] = option_list[idx].value;
+			//console.log(option_list[idx]);
+		}
+	}
+
 	var local_bounds = new kakao.maps.LatLngBounds();
 	var bounds_count = 0;
 	var location_list = Object.keys(occurrence_hash);
@@ -171,50 +168,65 @@ function filter_occurrences(){
 	}	
 }
 
-function add_new_finid(fin_id){
-	if( fin_id != 'All' ){show_finid_hash[fin_id] = true;}
-	var new_span = document.createElement("span");
-	var checkbox = document.createElement('input');
-	checkbox.setAttribute("onclick","toggle_finid('" + fin_id + "');");
-	checkbox.setAttribute("type","checkbox");
-	checkbox.setAttribute("id",fin_id+"checkbox");
-	checkbox.checked = true;
-	//ch.style.width = "60px";
-	var text_node = document.createTextNode(fin_id);
-	new_span.appendChild(checkbox);
-	new_span.appendChild(text_node);
-	//new_span.style.overflow="scroll";
-	//if( key_idx > 0 && !((key_idx)%2) ) { document.getElementById("finid_div").appendChild(document.createElement('br')); }
-	document.getElementById("finid_div").appendChild(new_span);
-	//document.getElementById("finid_div").appendChild(new_span);
-	document.getElementById("finid_div").appendChild(document.createElement('br'));
-}
-function add_new_date(observe_date){
-	var new_span = document.createElement("span");
-	var button = document.createElement('button');
-	button.setAttribute("onclick","show_date('" + observe_date + "');");
-	button.appendChild(document.createTextNode(observe_date));
-	new_span.appendChild(button);
-	document.getElementById("date_div").appendChild(new_span);
-	//if( key_idx > 0 && !((key_idx)%15) ) { document.getElementById("finid_div").appendChild(document.createElement('br')); }
-	document.getElementById("date_div").appendChild(new_span);
+function add_select_date_box(a_date_list){
+	var input_box = document.createElement('select');
+	//input_box.setAttribute("onclick","toggle_finid('" + fin_id + "');");
+	input_box.multiple = true;
+	input_box.setAttribute("id","date_select");
+	for(idx=0;idx<a_date_list.length;idx++){
+		var l_option = document.createElement('option');
+		l_option.setAttribute("value",a_date_list[idx]);
+		l_option.setAttribute("selected",true);
+		var tn = document.createTextNode(a_date_list[idx]);
+		l_option.appendChild(tn);
+		input_box.appendChild(l_option);
+	}
+	input_box.setAttribute("size",a_date_list.length);
+	input_box.setAttribute("onChange","javascript:filter_date();");
+	document.getElementById("select_div").appendChild(input_box);
 }
 
-function show_date(observe_date) {
-	
-	var show_date_list = [];
-	var l_date_list = Object.keys(show_date_hash);
-	for(idx=0;idx<l_date_list.length;idx++){
-		if( l_date_list[idx] == observe_date || observe_date == 'All'){
-			show_date_hash[l_date_list[idx]] = true;
-		} else {
-			show_date_hash[l_date_list[idx]] = false;
+function filter_date(){
+	var date_select = document.getElementById("date_select");
+	var selected_date_list = []
+	option_list = date_select.options;
+	for(idx=0;idx<option_list.length;idx++){
+		if(option_list[idx].selected){
+			selected_date_list[selected_date_list.length] = option_list[idx].value;
+			//console.log(option_list[idx]);
 		}
 	}
+	//console.log(selected_date_list);
+	total_finid_list = [];
+	for(idx=0;idx<selected_date_list.length;idx++){
+		finid_list = date_finid_hash[selected_date_list[idx]];
+		for(fidx=0;fidx<finid_list.length;fidx++){
+			if(!(total_finid_list.includes(finid_list[fidx]))){
+				total_finid_list[total_finid_list.length] = finid_list[fidx];
+			}
+		}
+	}
+
+	var finid_select = document.getElementById("finid_select")
+	if( finid_select){document.getElementById("select_div").removeChild(finid_select);}
+	
+	total_finid_list.sort();
+	var input_box = document.createElement('select');
+	input_box.multiple = true;
+	input_box.setAttribute("id","finid_select");
+	for(idx=0;idx<total_finid_list.length;idx++){
+		var l_option = document.createElement('option');
+		l_option.setAttribute("value",total_finid_list[idx]);
+		l_option.setAttribute("selected",true);
+		var tn = document.createTextNode(total_finid_list[idx]);
+		l_option.appendChild(tn);
+		input_box.appendChild(l_option);
+	}
+	input_box.setAttribute("size",total_finid_list.length);
+	input_box.setAttribute("onChange","javascript:filter_occurrences();");
+	document.getElementById("select_div").appendChild(input_box);
 	filter_occurrences();
 }
-
-
 </script>
 </body>
 </html>
