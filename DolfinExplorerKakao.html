@@ -7,7 +7,14 @@
 <body>
 	<!--div id="timeline" style="width:100%;height:10%;z-index:30;"></div-->
 	<!--div id="date_div" style="position:relative;margin:auto;height:35px;width:100%;text-align:center;z-index:20;"></div-->
-	<div id="select_div" style="position:absolute;left:20px;top:20px;height:90vh;width:120px;z-index:10;"></div>
+	<div id="select_div" style="position:absolute;left:20px;top:20px;height:90vh;width:120px;z-index:10;">
+		<div id="fit_view_div">
+			<input id="fit_view" type="checkbox" checked><span id="fit_view_span">Fit View</span></input>
+		</div>
+		<div id="cluster_div">
+				<input id="cluster" type="checkbox" checked onClick="javascript:cluster_markers();"><span id="cluster_span">Cluster</span></input>
+		</div>
+	</div>
 	<!--div id="finid_div" style="position:absolute;left:130px;top:20px;height:90vh;width:10vw;z-index:20;"></div-->
 	<div id="map" style="position:absolute;top:0px;left:0px;height:100%;width:100%;z-index:0;"></div>
 	<script type="text/javascript" src="jquery-3.5.1.min.js"></script>
@@ -25,6 +32,9 @@
 	  #date_select, #finid_select {
 		  overflow-y: auto;
 		  width: 85px;
+	  }
+	  #fit_view_span {
+		  font-size: 15px;
 	  }
 	  select {
 		border: 1px solid #fff;
@@ -76,7 +86,9 @@ for(key_idx=0;key_idx<key_list.length;key_idx++){
 
 			location_key = lat + '_' + lon;
 			if(!occurrence_hash.hasOwnProperty(location_key)){
-				var occurrence = new dolfin_occurrence( lat, lon );
+				var id = Object.keys(occurrence_hash).length + 1;
+
+				var occurrence = new dolfin_occurrence( id, lat, lon );
 				occurrence.set_map(map);
 				bounds.extend(occurrence.position);
 
@@ -85,34 +97,28 @@ for(key_idx=0;key_idx<key_list.length;key_idx++){
 				kakao.maps.event.addListener(occurrence.marker_instance, 'mouseout', makeOutListener(occurrence.infowindow_instance));
 				occurrence_hash[location_key] = occurrence;
 			}
-
 			// 새로운 날짜일 경우 date_hash 에 location_key 추가.
-			datetime_array = fin_data[idx]['datetime'].split(" ");
-			current_date = datetime_array[0];
+			var occur_datetime = fin_data[idx]['datetime'];
+			var datetime_array = fin_data[idx]['datetime'].split(" ");
+			var occur_date = datetime_array[0];
 			//yyyymmdd = date_array[0]
-			date_list = Object.keys(date_finid_hash);
-			if( !date_list.includes(current_date) ){
-				date_finid_hash[current_date] = []; //list[date_list.length] = current_date;
+			var date_list = Object.keys(date_finid_hash);
+			if( !date_list.includes(occur_date) ){
+				date_finid_hash[occur_date] = []; //list[date_list.length] = current_date;
 			}
-			date_finid_hash[current_date][date_finid_hash[current_date].length] = fin_id;
-			occurrence_hash[location_key].add_occurrence(fin_id, current_date);
+			date_finid_hash[occur_date][date_finid_hash[occur_date].length] = fin_id;
+			occurrence_hash[location_key].add_occurrence(fin_id, occur_date, occur_datetime);
 		}
 	}
 }
+
 date_list.sort()
 add_select_date_box(date_list);
 filter_date();
-//add_new_date("All");
-//alert( Object.keys(location_hash) );
 
-var lat_avr = lat_sum / data_count;
-var lon_avr = lon_sum / data_count;
-//alert( lat_min + ', ' + lon_min + ', ' + lat_max + ', ' + lon_max );
-//var map_bound = kakao.maps.LatLngBounds( sw, ne );
-//alert(lat_avr + ', ' + lon_avr);
-//map.setCenter(new kakao.maps.LatLng(lat_avr, lon_avr));
-map.setBounds(bounds);
-//alert(fin1_data.length);
+// Clustering
+cluster_markers();
+
 
 // 인포윈도우를 표시하는 클로저를 만드는 함수입니다 
 function makeOverListener(map, marker, infowindow) {
@@ -126,6 +132,54 @@ function makeOutListener(infowindow) {
     return function() {
         infowindow.close();
     };
+}
+
+kakao.maps.event.addListener(map, 'zoom_changed', function() {
+	cluster_markers();
+	console.log(map.getLevel());
+});
+
+function cluster_markers() {
+	var location_list = Object.keys(occurrence_hash);
+	for(idx1=0;idx1<location_list.length;idx1++){
+		//occurrence_hash[location_list[idx1]].set_map(map);
+		occurrence_hash[location_list[idx1]].set_visible( true );
+		occurrence_hash[location_list[idx1]].children=[];
+		occurrence_hash[location_list[idx1]].update_cluster_display();
+	}
+	if( !(document.getElementById("cluster").checked) ){
+		//console.log("cluster checked false");
+		return
+	}
+	//console.log("cluster checked true");
+	var radius = 20;
+	var mapProjection = map.getProjection();
+	var update_key_list = [];
+
+	for(idx1=0;idx1<location_list.length;idx1++){
+		var occ1 = occurrence_hash[location_list[idx1]];
+		for(idx2=idx1+1;idx2<location_list.length;idx2++){
+			var occ2 = occurrence_hash[location_list[idx2]];
+			coord1 = mapProjection.pointFromCoords(occ1.position);
+			coord2 = mapProjection.pointFromCoords(occ2.position);
+			dist = Math.sqrt( ( coord1.x - coord2.x ) ** 2 + ( coord1.y - coord2.y ) ** 2 );
+			if( dist < radius && occ1.visible == true) {
+				//occ1.set_map(null);
+				//occ2.set_map(null);
+				occ2.set_visible(false);
+				occ1.add_children(occ2);
+				occ1.update_cluster_display();
+				//update_key_list[update_key_list.length] = location_list[idx1];
+				if( occ2.id > 121 && occ2.id < 130 ) {
+					//console.log(occ1.id, coord1.x, coord1.y, occ2.id, coord2.x, coord2.y, dist);
+					//console.log(occ1.id, occ2.id, "hide");
+				}
+			}
+		}
+	}
+	//for(idx=0;idx<update_key_list.length;idx++){
+	//	occurrence_hash[location_list[idx].update_cluster_display();
+	//}
 }
 
 function filter_occurrences(){
@@ -156,14 +210,14 @@ function filter_occurrences(){
 		var location_key = location_list[idx];
 		occurrence_hash[location_key].set_visibility(show_finid_list, show_date_list);
 		if(occurrence_hash[location_key].visible) {
-			occurrence_hash[location_key].set_map(map);
+			occurrence_hash[location_key].set_visible(true);
 			local_bounds.extend(occurrence_hash[location_key].position);
 			bounds_count += 1;
 		} else {
-			occurrence_hash[location_key].set_map(null);
+			occurrence_hash[location_key].set_visible(false);
 		}
 	}
-	if( bounds_count > 0 ) {
+	if( document.getElementById("fit_view").checked && bounds_count > 0 ) {
 		map.setBounds(local_bounds);
 	}	
 }
