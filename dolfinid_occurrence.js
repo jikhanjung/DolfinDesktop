@@ -30,7 +30,7 @@ class dolfin_occurrence {
         this.infowindow_instance = new kakao.maps.InfoWindow({'position' : this.position, 'content' : this.div_instance, 'removable' : true});
         this.parent = null;
         this.children = [];
-        this.cluster_max_show = 10;
+        this.cluster_max_show = 5;
     }
     add_children(a_occ){
         this.children[this.children.length] = a_occ;

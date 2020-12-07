@@ -14,7 +14,11 @@
 		<div id="cluster_div">
 				<input id="cluster" type="checkbox" checked onClick="javascript:cluster_markers();"><span id="cluster_span">Cluster</span></input>
 		</div>
+		<div id="autoclose_div">
+			<input id="autoclose" type="checkbox" checked><span id="autoclose_span">Auto Close</span></input>
+		</div>
 	</div>
+</div>
 	<!--div id="finid_div" style="position:absolute;left:130px;top:20px;height:90vh;width:10vw;z-index:20;"></div-->
 	<div id="map" style="position:absolute;top:0px;left:0px;height:100%;width:100%;z-index:0;"></div>
 	<script type="text/javascript" src="jquery-3.5.1.min.js"></script>
@@ -130,7 +134,9 @@ function makeOverListener(map, marker, infowindow) {
 // 인포윈도우를 닫는 클로저를 만드는 함수입니다 
 function makeOutListener(infowindow) {
     return function() {
-        infowindow.close();
+		if( document.getElementById("autoclose").checked ) {
+			infowindow.close();
+		}
     };
 }
 
