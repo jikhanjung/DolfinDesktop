@@ -66,20 +66,23 @@ class DolfinExtractorWindow(QMainWindow, form_class):
 
 
     def set_table_header(self):
-        self.tblSubfolders.setColumnCount(4)
+        self.tblSubfolders.setColumnCount(5)
         header = self.tblSubfolders.horizontalHeader()
         self.tblSubfolders.setColumnWidth(0, 10)
         header.setSectionResizeMode(1, QHeaderView.Stretch)
         self.tblSubfolders.setColumnWidth(2, 100)
         self.tblSubfolders.setColumnWidth(3, 100)
+        self.tblSubfolders.setColumnWidth(4, 100)
         header_item0 = QTableWidgetItem("")
         header_item1 = QTableWidgetItem("Folder Name")
-        header_item2 = QTableWidgetItem("DolfinID")
-        header_item3 = QTableWidgetItem("Total")
+        header_item2 = QTableWidgetItem("Fins with ID")
+        header_item3 = QTableWidgetItem("Total Fins")
+        header_item4 = QTableWidgetItem("Image files")
         self.tblSubfolders.setHorizontalHeaderItem(0,header_item0)
         self.tblSubfolders.setHorizontalHeaderItem(1,header_item1)
         self.tblSubfolders.setHorizontalHeaderItem(2,header_item2)
         self.tblSubfolders.setHorizontalHeaderItem(3,header_item3)
+        self.tblSubfolders.setHorizontalHeaderItem(4,header_item4)
         self.tblSubfolders.verticalHeader().setVisible(False)
 
 
@@ -104,6 +107,7 @@ class DolfinExtractorWindow(QMainWindow, form_class):
             #print(item)
             full_path = self.working_folder.joinpath(item)
             if os.path.isdir(str(full_path)):
+                image_name_list = []
                 csv_path = full_path.joinpath( full_path.name + ".csv" )
                 icondb_path = full_path.joinpath( full_path.name + ".icondb" )
                 #finicon_hash = load_and_unpickle_image_hash( icondb_path )
@@ -111,18 +115,20 @@ class DolfinExtractorWindow(QMainWindow, form_class):
 
                 if csv_path.exists():
                     self.path_list.append(full_path)
-                    with open(str(csv_path), newline='') as csvfile:
+                    with open(str(csv_path), newline='',encoding='utf-8') as csvfile:
                         reader = csv.DictReader(csvfile)
                         row_count = 0
                         finid_count = 0
                         for row in reader:
                             row_count += 1
                             image_name = row['image_name']
+                            if image_name not in image_name_list:
+                                image_name_list.append(image_name)
                             fin_record  = DolfinRecord( row )
                             if fin_record.dolfin_id != '':
                                 finid_count += 1
 
-
+                    image_count = len(image_name_list)
                     table_row_count = self.tblSubfolders.rowCount()
                     checkbox = QCheckBox()
                     checkbox.setChecked(True)
@@ -138,12 +144,15 @@ class DolfinExtractorWindow(QMainWindow, form_class):
                     item2.setTextAlignment(int(Qt.AlignRight|Qt.AlignVCenter))
                     item3 = QTableWidgetItem(str(row_count))
                     item3.setTextAlignment(int(Qt.AlignRight|Qt.AlignVCenter))
+                    item4 = QTableWidgetItem(str(image_count))
+                    item4.setTextAlignment(int(Qt.AlignRight|Qt.AlignVCenter))
                     self.tblSubfolders.insertRow(table_row_count)
                     self.checkbox_list.append(checkbox)
                     self.tblSubfolders.setCellWidget ( current_row, 0, cbx_widget)
                     self.tblSubfolders.setItem(current_row, 1, item1)
                     self.tblSubfolders.setItem(current_row, 2, item2)
                     self.tblSubfolders.setItem(current_row, 3, item3)
+                    self.tblSubfolders.setItem(current_row, 4, item4)
                     current_row += 1
 
 
@@ -164,7 +173,7 @@ class DolfinExtractorWindow(QMainWindow, form_class):
 
             if csv_path.exists():
 
-                with open(str(csv_path), newline='') as csvfile:
+                with open(str(csv_path), newline='', encoding='utf-8') as csvfile:
                     reader = csv.DictReader(csvfile)
 
                     prev_image_name = ''
