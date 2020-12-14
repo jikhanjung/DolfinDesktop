@@ -10,10 +10,16 @@ import math
 from operator import itemgetter, attrgetter
 import webbrowser
 
-from PyQt5.QtWidgets import *
+from PyQt5.QtWidgets import QTableWidgetItem, QMainWindow, QHeaderView, QFileDialog, QCheckBox, \
+                            QWidget, QHBoxLayout, QVBoxLayout, QProgressBar, QApplication, \
+                            QDialog, QLineEdit, QLabel, QPushButton, QAbstractItemView, \
+                            QMessageBox, QListView, QTreeWidgetItem, QToolButton
+
 from PyQt5 import uic
-from PyQt5.QtGui import *
-from PyQt5.QtCore import *
+from PyQt5.QtGui import QIcon, QColor, QPainter, QPen, QPixmap, QStandardItemModel, QStandardItem,\
+                        QPainterPath, QFont, QImageReader
+from PyQt5.QtCore import Qt, QRect, QSortFilterProxyModel, QSettings, QEvent, QRegExp, QSize, \
+                         QItemSelectionModel, QDateTime, QBuffer, QIODevice, QByteArray
 
 from DolfinRecord import DolfinRecord, fieldnames
 #from DolfinExplorer import QGoogleMap
@@ -64,7 +70,7 @@ class PreferencesDialog(QDialog):
 
     Args:
         None
-    
+
     Attributes:
         well..
     '''
@@ -104,23 +110,23 @@ class PreferencesDialog(QDialog):
         self.setLayout(self.layout)
         self.dolfinid_prefix = ''
         self.data_folder = ''
-        self.readSettings()
+        self.read_settings()
         self.lblDolfinIDPrefix.setText("Dolfin ID Prefix")
         self.lblDataFolder.setText("Data Folder")
         self.edtDolfinIDPrefix.setText(self.dolfinid_prefix)
         self.edtDataFolder.setText(str(self.data_folder.resolve()))
 
-    def writeSettings(self):
+    def write_settings(self):
         self.parent.dolfinid_prefix = self.edtDolfinIDPrefix.text()
         self.parent.data_folder = Path(self.edtDataFolder.text())
         #print( self.parent.dolfinid_prefix, self.parent.data_folder)
 
-    def readSettings(self):
+    def read_settings(self):
         self.dolfinid_prefix = self.parent.dolfinid_prefix
         self.data_folder = self.parent.data_folder.resolve()
 
     def Okay(self):
-        self.writeSettings()
+        self.write_settings()
         self.close()
 
     def Cancel(self):
@@ -271,7 +277,7 @@ class DolfinNoteWindow(QMainWindow, form_class):
         self.working_folder = ''
         self.dolfinid_prefix = ''
 
-        self.readSettings()
+        self.read_settings()
 
         self.widget.setLayout(self.vbox)
         self.scrollArea.setWidget(self.widget)
@@ -337,7 +343,7 @@ class DolfinNoteWindow(QMainWindow, form_class):
         #self.preferences_dialog.parent = self
         self.preferences_dialog.show()
 
-    def writeSettings(self):
+    def write_settings(self):
         settings = QSettings(QSettings.IniFormat, QSettings.UserScope,"DiploSoft", "DolfinNote")
 
         settings.beginGroup("Defaults")
@@ -345,7 +351,7 @@ class DolfinNoteWindow(QMainWindow, form_class):
         settings.setValue("Data Folder", str(self.data_folder))
         settings.endGroup()
 
-    def readSettings(self):
+    def read_settings(self):
         settings = QSettings(QSettings.IniFormat, QSettings.UserScope,"DiploSoft", "DolfinNote")
 
         settings.beginGroup("Defaults")
@@ -1138,7 +1144,6 @@ class DolfinNoteWindow(QMainWindow, form_class):
                     fin_index0 = int(row['fin_index']) - 1
                     image_name_stem = Path(fin_record.image_name).stem
                     fin_index = int(fin_record.fin_index)
-                    old_iconfile_name = "{}_{:02d}.JPG".format(image_name_stem, fin_index)
                     finname = fin_record.get_finname()
 
                     new_finid = fin_record.dolfin_id
@@ -1156,18 +1161,14 @@ class DolfinNoteWindow(QMainWindow, form_class):
                         icon_pixmap = QPixmap(self.finicon_hash[finname])
                     else:
                         #print("find ", old_iconfile_name)
-                        if old_iconfile_name in self.finicon_hash.keys():
-                            #print("converting old hash to new hash")
-                            self.finicon_hash[finname] = self.finicon_hash[old_iconfile_name]
-                            icon_pixmap = QPixmap(self.finicon_hash[finname])
-                            del self.finicon_hash[old_iconfile_name]
-                        else:
-                            if pixmap is None:
-                                pixmap = QPixmap(str(image_path))
-                            icon_pixmap = self.get_cropped_fin_image(pixmap, image_index, fin_index0, False, None, {}, True).scaledToWidth(200)
-                            icon_image = icon_pixmap.toImage()
-                            self.finicon_hash[finname] = icon_image
-                            icon_pixmap = QPixmap(icon_image)
+                        #print("pixmap:", pixmap, image_path)
+                        if pixmap is None:
+                            pixmap = QPixmap(str(image_path))
+                        cropped_pixmap = self.get_cropped_fin_image(pixmap, image_index, fin_index0, False, None, {}, True)
+                        icon_pixmap = cropped_pixmap.scaledToWidth(200)
+                        icon_image = icon_pixmap.toImage()
+                        self.finicon_hash[finname] = icon_image
+                        icon_pixmap = QPixmap(icon_image)
 
                     self.fin_record_hash[finname] = fin_record
 
@@ -1320,23 +1321,29 @@ class DolfinNoteWindow(QMainWindow, form_class):
         finbbox = {}
         finview = {}
         fin_record = None
+        #print("get cropped fin image", image_index, fin_index0, "pixmap", orig_width, orig_height )
 
         if fin_index0 >= 0:
             fin_record = self.all_image_fin_list[image_index][fin_index0]
 
         if fin_index0 >= 0 and fin_record.confidence > 0:
             cls, center_x, center_y, fin_width, fin_height, conf = fin_record.get_detection_info()
+            #print("fin info", center_x, center_y, fin_width, fin_height)
 
             finbbox['width'] = int(fin_width * orig_width)
             finbbox['height'] = int(fin_height * orig_height)
+            #print("fin bbox", finbbox)
             if square:
                 finbbox['width'] = max(int(fin_width*orig_width), int(fin_height*orig_height))
                 finbbox['height'] = finbbox['width']
+            #print("fin bbox", finbbox)
             finbbox['x1'] = int(center_x * orig_width - (finbbox['width'] / 2))
             finbbox['y1'] = int(center_y * orig_height - (finbbox['height']  / 2))
+            #print("fin bbox", finbbox)
             finbbox['x2'] = finbbox['x1'] + finbbox['width']
             finbbox['y2'] = finbbox['y1'] + finbbox['height']
             #print("finbbox", finbbox)
+            #print("fin bbox", finbbox)
 
             if widget is None:
                 finview['width'] = int(finbbox['width'] * 1.5 / self.zoom_factor)
@@ -1899,7 +1906,7 @@ class DolfinNoteWindow(QMainWindow, form_class):
     def closeEvent(self, event):
         if self.mainview_dlg is not None:
             self.mainview_dlg.close()
-        self.writeSettings()
+        self.write_settings()
         #if self.map_dlg is not None:
         #    self.map_dlg.close()
 

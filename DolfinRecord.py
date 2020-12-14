@@ -1,7 +1,10 @@
 from pathlib import Path
 
-fieldnames = [ 'folder_name', 'image_name', 'image_width', 'image_height', 'class_id', 'fin_index', 'center_x', 'center_y', 'width', 'height', 'confidence', 
-               'is_fin', 'image_datetime', 'location', 'latitude', 'longitude','map_datum','dolfin_id', 'observed_by', 'created_by', 'created_on', 'modified_by', 'modified_on', 'comment' ]
+fieldnames = [ 'folder_name', 'image_name', 'image_width', 'image_height', 'class_id', \
+               'fin_index', 'center_x', 'center_y', 'width', 'height', 'confidence', \
+               'is_fin', 'image_datetime', 'location', 'latitude', 'longitude','map_datum',\
+               'dolfin_id', 'observed_by', 'created_by', 'created_on', 'modified_by', \
+               'modified_on', 'comment' ]
 
 class DolfinRecord:
     def __init__(self,info={}):
@@ -31,16 +34,16 @@ class DolfinRecord:
         self.modified_on = ''
         self.comment = ''
 
-        if( len( info ) > 0 ):
+        if len( info ) > 0:
             self.set_info( info )
         #print( "info:", info['modified_on'] )
-    
+
     #def fieldnames(self):
     def get_detection_info(self):
         return self.class_id, self.center_x, self.center_y, self.width, self.height, self.confidence
 
     def get_info(self):
-        info_hash = { 
+        info_hash = {
             'folder_name': self.folder_name,
             'image_name': self.image_name,
             'image_width': self.image_width,
@@ -84,13 +87,13 @@ class DolfinRecord:
         return result
 
     def get_x1y1x2y2_normalized( self ):
-        return { 'x1': self.center_x - 0.5 * self.width,  'x2': self.center_x + 0.5 * self.width, 
+        return { 'x1': self.center_x - 0.5 * self.width,  'x2': self.center_x + 0.5 * self.width,
                  'y1': self.center_y - 0.5 * self.height, 'y2': self.center_y + 0.5 * self.height }
 
     def get_area( self ):
         coord = self.get_x1y1x2y2()
         return ( coord['x2'] - coord['x1'] ) * ( coord['y2'] - coord['y1'] )
-    
+
     def get_intersection( self, rec ):
         coord1 = self.get_x1y1x2y2()
         coord2 = rec.get_x1y1x2y2()
@@ -103,7 +106,10 @@ class DolfinRecord:
         intersection['x2'] = min( coord1['x2'], coord2['x2'] )
         intersection['y1'] = max( coord1['y1'], coord2['y1'] )
         intersection['y2'] = min( coord1['y2'], coord2['y2'] )
-        return ( intersection['x2'] - intersection['x1'] ) * ( intersection['y2'] - intersection['y1'] )
+        intersection_x = intersection['x2'] - intersection['x1']
+        intersection_y = intersection['y2'] - intersection['y1']
+        intersection_val = intersection_x * intersection_y
+        return intersection_val
 
     def get_iou( self, rec ):
         if self.confidence < 0 or rec.confidence < 0:
@@ -111,20 +117,20 @@ class DolfinRecord:
         intersection_area = self.get_intersection( rec )
         union_area = self.get_area() + rec.get_area() - intersection_area
         iou = intersection_area / union_area
-        return iou        
+        return iou
 
     def get_itemname(self):
         if self.confidence < 0:
             return self.image_name
         else:
-            return self.image_name + '-' + str( self.fin_index ) 
+            return self.image_name + '-' + str( self.fin_index )
 
     def get_itemname_with_dolfin_id(self):
         if self.confidence < 0:
             return self.get_itemname()
         else:
             name = self.get_itemname()
-            if self.is_fin == False:
+            if self.is_fin is False:
                 name += ' (No Fin)'
             elif self.dolfin_id != '':
                 name += ' (' + self.dolfin_id + ')'
@@ -197,11 +203,10 @@ class DolfinRecord:
         if 'confidence' in info.keys():
             self.confidence = float(info['confidence'])
         if 'is_fin' in info.keys():
-            if str(info['is_fin']).lower() == 'true' or info['is_fin'] == True:
+            if str(info['is_fin']).lower() == 'true' or info['is_fin'] is True:
                 self.is_fin = True
             else:
                 self.is_fin = False
-            #print( "record is_fin:", info['image_name'], info['fin_index'], info['is_fin'], self.is_fin)
         if 'image_datetime' in info.keys():
             self.image_datetime = info['image_datetime']
         #if( 'image_time' in info.keys() ):

@@ -1,27 +1,18 @@
 import webbrowser
-from PIL import Image
-import pickle
-import json  
+import json
 
-import imagesize
 import os
 import sys
-import glob
 from pathlib import Path
 import csv
-from datetime import datetime
-import time
-import math
-from operator import itemgetter, attrgetter
-import webbrowser
-from chardet.universaldetector import UniversalDetector
 
-from PyQt5.QtWidgets import *
+from PyQt5.QtWidgets import QTableWidgetItem, QMainWindow, QHeaderView, QFileDialog, QCheckBox, \
+                            QWidget, QHBoxLayout, QApplication
 from PyQt5 import uic
-from PyQt5.QtGui import *
-from PyQt5.QtCore import *
+from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import Qt
 
-from DolfinRecord import DolfinRecord, fieldnames
+from DolfinRecord import DolfinRecord
 
 form_class = uic.loadUiType("DolfinExtractor.ui")[0]
 
@@ -95,6 +86,9 @@ class DolfinExtractorWindow(QMainWindow, form_class):
     def open_folder_function(self):
         parent_folder = str(self.working_folder.parent)
         open_dir = QFileDialog.getExistingDirectory(self, 'Open directory', parent_folder)
+        #print( "dir:", open_dir )
+        if open_dir == '':
+            return
 
         QApplication.setOverrideCursor(Qt.WaitCursor)
         self.edtFolder.setText(open_dir)
@@ -109,7 +103,7 @@ class DolfinExtractorWindow(QMainWindow, form_class):
             if os.path.isdir(str(full_path)):
                 image_name_list = []
                 csv_path = full_path.joinpath( full_path.name + ".csv" )
-                icondb_path = full_path.joinpath( full_path.name + ".icondb" )
+                #icondb_path = full_path.joinpath( full_path.name + ".icondb" )
                 #finicon_hash = load_and_unpickle_image_hash( icondb_path )
                 #print( csv_path )
 
@@ -165,68 +159,28 @@ class DolfinExtractorWindow(QMainWindow, form_class):
         QApplication.setOverrideCursor(Qt.WaitCursor)
         finid_hash = {}
         lat_min, lon_min, lat_max, lon_max = 999,999,0,0
-        for p in self.path_list:
-            csv_path = p.joinpath( p.name + ".csv" )
-            icondb_path = p.joinpath( p.name + ".icondb" )
+        for current_path in self.path_list:
+            csv_path = current_path.joinpath( current_path.name + ".csv" )
+            #icondb_path = p.joinpath( p.name + ".icondb" )
             #finicon_hash = load_and_unpickle_image_hash( icondb_path )
-            print( csv_path )
+            #print( csv_path )
 
             if csv_path.exists():
 
                 with open(str(csv_path), newline='', encoding='utf-8') as csvfile:
                     reader = csv.DictReader(csvfile)
 
-                    prev_image_name = ''
-                    prev_index = -1
-                    pixmap = None
+                    #prev_image_name = ''
 
                     for row in reader:
-                        image_index = -1
-                        image_path = csv_path.parent.joinpath(row['image_name'])
-
-                        image_name = row['image_name']
-                        #filepath_stem = ''
-                        #pixmap = None
-
                         fin_record  = DolfinRecord( row )
-
                         if fin_record.dolfin_id == '':
                             continue
-                        
-                        if prev_image_name != image_name:
-                            current_image = Image.open( str(image_path) )
 
-                        finview_ratio = 1.5
-                        fin_coord = fin_record.get_x1y1x2y2()
-                        fin_width = fin_coord['x2'] - fin_coord['x1'] + 1
-                        fin_height = fin_coord['y2'] - fin_coord['y1'] + 1
-                        fin_wh = max( fin_width, fin_height )
-                        fin_center_x, fin_center_y = fin_record.center_x * fin_record.image_width, fin_record.center_y * fin_record.image_height
-                        x1, y1, x2, y2 = fin_center_x - int( finview_ratio * fin_wh / 2 ), fin_center_y - int( finview_ratio * fin_wh / 2 ), fin_center_x + int( finview_ratio * fin_wh / 2 ), fin_center_y + int( finview_ratio * fin_wh / 2 )
-                        #cropped_image = current_image.crop( ( x1, y1, x2, y2 ) )
-                        #resized_image = cropped_image.resize( ( 200, 200 ) )
-
-                        date_time_obj = datetime.strptime(fin_record.image_datetime, '%Y-%m-%d %H:%M:%S')
-                        yyyymmdd = date_time_obj.strftime( '%Y%m%d')
-
-
-                        #finpath = finbasepath.joinpath( fin_record.dolfin_id )
-                        #if not os.path.isdir(str(finpath)):
-                        #    print("making path", str(finpath))
-                            #os.makedirs(str(finpath))
-
-                        #finfilepath_stem = str( Path(finpath).joinpath( yyyymmdd + '_' + image_path.stem ) )
-
-                        fin_index0 = int(row['fin_index']) - 1
-                        fin_idx_str = "00" + row['fin_index']
-                        #icon_filepath = Path( finfilepath_stem + "_" + fin_idx_str[-2:] + ".JPG" )
-                        #print( icon_filepath)
-                        
-                        #resized_image.save( str( icon_filepath ) )
                         finid = fin_record.dolfin_id
-
                         if finid not in finid_hash.keys():
                             finid_hash[finid] = []
+
                         lat, lon = fin_record.get_decimal_latitude_longitude()
                         if lat > 0:
                             lat_max = max(lat_max, lat)
@@ -234,8 +188,9 @@ class DolfinExtractorWindow(QMainWindow, form_class):
                             lon_max = max(lon_max, lon)
                             lon_min = min(lon_min, lon)
 
-                        finid_hash[finid].append({'iconname': fin_record.get_finname(), 'datetime': fin_record.image_datetime,
-                                                'latitude': lat, 'longitude': lon})
+                        finid_hash[finid].append({'iconname': fin_record.get_finname(),
+                                                  'datetime': fin_record.image_datetime,
+                                                  'latitude': lat, 'longitude': lon})
 
 
         json_object = "var finid_hash = " + json.dumps(finid_hash, indent = 4) + ";"
