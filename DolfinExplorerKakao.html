@@ -119,6 +119,7 @@ for(key_idx=0;key_idx<key_list.length;key_idx++){
 date_list.sort()
 add_select_date_box(date_list);
 filter_date();
+//filter_finid();
 
 // Clustering
 cluster_markers();
@@ -141,6 +142,7 @@ function makeOutListener(infowindow) {
 }
 
 kakao.maps.event.addListener(map, 'zoom_changed', function() {
+	filter_occurrences(false);
 	cluster_markers();
 	console.log(map.getLevel());
 });
@@ -149,7 +151,7 @@ function cluster_markers() {
 	var location_list = Object.keys(occurrence_hash);
 	for(idx1=0;idx1<location_list.length;idx1++){
 		//occurrence_hash[location_list[idx1]].set_map(map);
-		occurrence_hash[location_list[idx1]].set_visible( true );
+		//occurrence_hash[location_list[idx1]].set_visible( true );
 		occurrence_hash[location_list[idx1]].children=[];
 		occurrence_hash[location_list[idx1]].update_cluster_display();
 	}
@@ -188,7 +190,7 @@ function cluster_markers() {
 	//}
 }
 
-function filter_occurrences(){
+function filter_occurrences(fit_window=true){
 	var show_date_list = [];
 	var show_finid_list = [];
 	var date_select = document.getElementById("date_select");
@@ -223,7 +225,7 @@ function filter_occurrences(){
 			occurrence_hash[location_key].set_visible(false);
 		}
 	}
-	if( document.getElementById("fit_view").checked && bounds_count > 0 ) {
+	if( document.getElementById("fit_view").checked && bounds_count > 0 && fit_window) {
 		map.setBounds(local_bounds);
 	}	
 }

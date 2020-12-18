@@ -1,16 +1,18 @@
 import webbrowser
 import json
+from datetime import datetime
 
 import os
 import sys
 from pathlib import Path
 import csv
+import pickle
 
 from PyQt5.QtWidgets import QTableWidgetItem, QMainWindow, QHeaderView, QFileDialog, QCheckBox, \
                             QWidget, QHBoxLayout, QApplication
 from PyQt5 import uic
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QIcon, QImageReader, QPixmap
+from PyQt5.QtCore import Qt, QBuffer, QIODevice, QByteArray
 
 from DolfinRecord import DolfinRecord
 
@@ -37,7 +39,7 @@ class DolfinExtractorWindow(QMainWindow, form_class):
         self.btnExportJS.clicked.connect(self.export_javascript)
         self.btnShowInMap.clicked.connect(self.show_in_map)
         self.btnExportFinImages.clicked.connect(self.export_fin_images)
-        self.btnExportFinImages.setEnabled(False)
+        #self.btnExportFinImages.setEnabled(False)
         self.path_list = []
         self.checkbox_list = []
         self.working_folder = Path("./")
@@ -46,15 +48,10 @@ class DolfinExtractorWindow(QMainWindow, form_class):
 
         self.set_table_header()
 
-    def export_fin_images(self):
-        pass
-
-
     def show_in_map(self):
         url = "file://" + str(Path("./DolfinExplorerKakao.html").resolve())
         print(url)
         webbrowser.open(url,new=2)
-
 
     def set_table_header(self):
         self.tblSubfolders.setColumnCount(5)
@@ -157,7 +154,7 @@ class DolfinExtractorWindow(QMainWindow, form_class):
         docstring
         """
         QApplication.setOverrideCursor(Qt.WaitCursor)
-        finid_hash = {}
+        occurrence_hash = {}
         lat_min, lon_min, lat_max, lon_max = 999,999,0,0
         for current_path in self.path_list:
             csv_path = current_path.joinpath( current_path.name + ".csv" )
@@ -174,33 +171,96 @@ class DolfinExtractorWindow(QMainWindow, form_class):
 
                     for row in reader:
                         fin_record  = DolfinRecord( row )
+
                         if fin_record.dolfin_id == '':
                             continue
 
-                        finid = fin_record.dolfin_id
-                        if finid not in finid_hash.keys():
-                            finid_hash[finid] = []
-
+                        image_name = fin_record.image_name
+                        image_datetime = fin_record.image_datetime
                         lat, lon = fin_record.get_decimal_latitude_longitude()
-                        if lat > 0:
-                            lat_max = max(lat_max, lat)
-                            lat_min = min(lat_min, lat)
-                            lon_max = max(lon_max, lon)
-                            lon_min = min(lon_min, lon)
+                        finid = fin_record.dolfin_id
 
-                        finid_hash[finid].append({'iconname': fin_record.get_finname(),
-                                                  'datetime': fin_record.image_datetime,
-                                                  'latitude': lat, 'longitude': lon})
+                        if image_name not in occurrence_hash.keys():
+                            occurrence_hash[image_name] = {'datetime': image_datetime,
+                                                           'latitude': lat, 'longitude': lon,
+                                                           'finid_list': []}
+
+                        occurrence_hash[image_name]['finid_list'].append(finid)
 
 
-        json_object = "var finid_hash = " + json.dumps(finid_hash, indent = 4) + ";"
+        json_object = "var dolfin_occurrence_hash = " + json.dumps(occurrence_hash, indent = 4) + ";"
         #print( lat_min, lat_max, lon_min, lon_max )
         #print(json_object)
 
-        with open("dolfinid_data.js", 'w', newline='', encoding='utf-8') as jsfile:
+        with open("dolfin_occurrence_data.js", 'w', newline='', encoding='utf-8') as jsfile:
             jsfile.write(json_object)
         jsfile.close()
         QApplication.restoreOverrideCursor()
+
+    def load_and_unpickle_image_hash(self, filepath):
+        image_hash = {}
+
+        bytearray_hash = pickle.load(open(filepath, "rb"))
+
+        for k in bytearray_hash.keys():
+            byte_array = bytearray_hash[k]
+
+            buffer = QBuffer(byte_array)
+            buffer.open(QIODevice.ReadOnly)
+            reader = QImageReader(buffer)
+            img = reader.read()
+            image_hash[k] = img
+        return image_hash
+
+    def export_fin_images(self):
+        """
+        docstring
+        """
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+        finid_hash = {}
+        finid_folder = "./finid_images"
+        finid_basepath = Path(finid_folder)
+        
+        for current_path in self.path_list:
+            csv_path = current_path.joinpath( current_path.name + ".csv" )
+            icondb_path = current_path.joinpath( current_path.name + ".icondb" )
+            finicon_hash = self.load_and_unpickle_image_hash( icondb_path )
+            #print( csv_path )
+
+            if csv_path.exists():
+
+                with open(str(csv_path), newline='', encoding='utf-8') as csvfile:
+                    reader = csv.DictReader(csvfile)
+
+                    #prev_image_name = ''
+
+                    for row in reader:
+                        fin_record  = DolfinRecord( row )
+                        if fin_record.dolfin_id == '':
+                            continue
+                        
+                        finid = fin_record.dolfin_id
+                        if finid not in finid_hash.keys():
+                            finid_hash[finid] = []
+                        
+                        finid_path = finid_basepath.joinpath(finid)
+                        if not os.path.exists(str(finid_path)):
+                            os.makedirs(finid_path) # make new output folder  
+
+                        date_time_obj = datetime.strptime(fin_record.image_datetime, '%Y-%m-%d %H:%M:%S')
+                        yyyymmdd = date_time_obj.strftime( '%Y%m%d')
+
+                        finid_filename = "{}_{}.JPG".format(yyyymmdd, fin_record.get_finname()) 
+
+                        finid_filepath = finid_path.joinpath(finid_filename)
+                        icon_pixmap = QPixmap(finicon_hash[fin_record.get_finname()])
+                        print(finid_filepath)
+                        fin_img = icon_pixmap.toImage()
+                        fin_img.save(str(finid_filepath))
+
+        QApplication.restoreOverrideCursor()        
+
+
 
 if __name__ == "__main__":
     #QApplication : 프로그램을 실행시켜주는 클래스
