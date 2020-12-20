@@ -8,6 +8,18 @@ class dolfin_occurrence_cluster {
 
     }
 }
+// First, checks if it isn't implemented yet.
+if (!String.prototype.format) {
+    String.prototype.format = function() {
+      var args = arguments;
+      return this.replace(/{(\d+)}/g, function(match, number) { 
+        return typeof args[number] != 'undefined'
+          ? args[number]
+          : match
+        ;
+      });
+    };
+ }
 
 class dolfin_occurrence {
     constructor(id,latitude, longitude) {
@@ -16,14 +28,17 @@ class dolfin_occurrence {
         this.latitude = latitude;
         this.longitude = longitude;
         this.occurrence_data = {};
+        this.occurrence_list = [];
+        this.image_data_hash = {};
         this.finid_list = [];
         this.display_hash = {};
         this.display_row = 0;
         this.visible = true;
         this.position  = new kakao.maps.LatLng(this.latitude, this.longitude);
         this.marker_instance = new kakao.maps.Marker({position: this.position});
-        this.div_instance = '<div class="label" style="padding:5px;" id="' + this.location_key + '"></div>';
-        this.overlay_instance = new kakao.maps.CustomOverlay({'position': this.position,'marker': this.marker_instance,'content': this.div_instance});
+        this.custom_overlay_instance = new kakao.maps.CustomOverlay({position: this.position, xAnchor:0.5,yAnchor:3.5, content:'<div>' + this.id + '</div>'});
+        //this.custom_overlay_instance.setMap()
+        this.overlay_instance = new kakao.maps.CustomOverlay({'position': this.position,'marker': this.marker_instance,'content': ''});
         //this.break_point_label = '';
         this.iw_content = '<div style="padding:5px;"></div>';
         this.iw_position = this.position;
@@ -31,6 +46,9 @@ class dolfin_occurrence {
         this.parent = null;
         this.children = [];
         this.cluster_max_show = 5;
+        this.map = null;
+        this.div_content = '';
+        this.sticky = false;
     }
     add_children(a_occ){
         this.children[this.children.length] = a_occ;
@@ -45,18 +63,60 @@ class dolfin_occurrence {
     }
     set_map(map){
         this.marker_instance.setMap(map);
+        this.custom_overlay_instance.setMap(map);
+        //console.log(this.custom_overlay_instance);
+        this.map = map;
     }
-    add_occurrence(fin_id, occ_date, occ_datetime){
-        if(!this.finid_list.includes(fin_id)){
-            this.finid_list[this.finid_list.length] = fin_id;
-            this.occurrence_data[fin_id] = {};
+    show_infowindow(){
+        //this.infowindow_instance.setContent(this.div_content);
+        this.infowindow_instance.open(this.map, this.marker_instance);
+        //this.infowindow_instance.setMap(this.map);
+        this.custom_overlay_instance.setMap(null);
+    }
+    hide_infowindow(){
+        //this.infowindow_instance.setContent("<div>" + this.id + "</div>");
+        this.infowindow_instance.setMap(null);
+        this.custom_overlay_instance.setMap(this.map);
+    }
+    add_image_data(image_name,image_data){
+        //console.log("add data", this.id, image_name)
+        if(!Object.keys(this.image_data_hash).includes(image_name)){
+            this.image_data_hash[image_name] = image_data;
         }
-        var occ_datetime_hash = this.occurrence_data[fin_id];
-        if( !Object.keys(occ_datetime_hash).includes(occ_date) ){
-            occ_datetime_hash[occ_date] = [];
-            
+        var l_date = image_data['image_date'];
+        var l_time = image_data['image_time'];
+        for(var idx=0;idx<image_data['finid_list'].length;idx++){
+            this.occurrence_list[this.occurrence_list.length] = [ image_name, l_date, l_time, image_data['finid_list'][idx] ];
         }
-        occ_datetime_hash[occ_date][occ_datetime_hash[occ_date].length] = occ_datetime;
+        this.custom_overlay_instance.setContent('<div style="font-size:12px; background-color: rgba(255, 255, 255, 0.6);">'+l_date+'</div>');
+    }
+    update_content(){
+        //console.log("update_content", this.id);
+        var occ_hash = {};
+        var date_list = [];
+        for(var idx=0;idx<this.occurrence_list.length;idx++){
+            var [ l_imagename, l_date, l_time, l_finid ] = this.occurrence_list[idx];
+            //console.log(l_date,l_time,l_finid);
+            var occ_key = [ l_date, l_time, l_finid ].join(" ");
+            if( !Object.keys(occ_hash).includes(occ_key)){
+                occ_hash[occ_key] = 0;
+            }
+            if(!date_list.includes(l_date)){
+                date_list[date_list.length] = l_date;
+            }
+            occ_hash[occ_key] += 1;
+        }
+        var occ_key_list = Object.keys(occ_hash);
+        for(var idx=0;idx<occ_key_list.length;idx++){
+            var occ_key = occ_key_list[idx];
+            this.add_occurrence_display(occ_key, occ_hash[occ_key]);
+            //console.log(occ_key, occ_hash[occ_key]);
+        }
+        //console.log(date_list);
+        
+    }
+    toggle_sticky() {
+        this.sticky = !this.sticky;
     }
     set_visible( visible_true ){
         if( visible_true ) {
@@ -66,37 +126,8 @@ class dolfin_occurrence {
         }
         this.visible = visible_true;
     }
-    set_visibility(finid_list,date_list){
-        //console.log(this);
-        this.reset_display();
-        this.visible = false;
-        for(var fidx=0;fidx<finid_list.length;fidx++){
-            if(this.finid_list.includes(finid_list[fidx])) {
-                var occ_date_hash = this.occurrence_data[finid_list[fidx]];
-                for(var didx=0;didx<date_list.length;didx++){
-                    if(Object.keys(occ_date_hash).includes(date_list[didx])) {
-                        this.visible = true;
-                        var prev_dt = '';
-                        var dt_count = 0;
-                        for(var dtidx=0;dtidx<occ_date_hash[date_list[didx]].length;dtidx++){
-                            var dt = occ_date_hash[date_list[didx]][dtidx];
-                            //console.log(occ_date_hash[date_list[didx]])
-                            if( dt != prev_dt && prev_dt != '') {
-                                this.add_display(finid_list[fidx],prev_dt, dt_count);
-                                dt_count = 0;
-                            }
-                            dt_count += 1;
-                            prev_dt = dt;
-                        }
-                        this.add_display(finid_list[fidx], prev_dt, dt_count);
-                    }
-                }
-            }
-        }
-        this.infowindow_instance.setContent(this.div_content);
-    }
     reset_display(){
-        this.display_hash = {};
+        //this.display_hash = {};
         this.div_content = document.createElement('div');
         this.div_content.style.fontSize = '12px';
         this.div_content.style.width = '200px';
@@ -108,31 +139,37 @@ class dolfin_occurrence {
         this.infowindow_instance.setContent(this.div_content);
         //console.log(this.id,"children:", this.children.length);
     }
-    add_display(a_finid, a_datetime, a_datetime_count){
-        this.div_content.appendChild(document.createTextNode(a_finid + " " + a_datetime + "(" + String(a_datetime_count) + ")"));
+    add_occurrence_display( a_occ_key, a_occ_count ){
+        this.div_content.appendChild(document.createTextNode("{0} ({1})".format(a_occ_key, a_occ_count)));
         this.div_content.appendChild(document.createElement('br'));
         this.display_row += 1;
         this.div_content.style.height = String( 17 * (this.display_row + 1 )) + 'px';
     }
     update_cluster_display(){
-        //console.log("update display", this.id, this.div_content)
+        //console.log("update cluster display", this.id, this.children.length)
         var local_div = document.createElement("div");
         //console.log("update display 1", this.id, this.children.length, local_div);
         local_div.appendChild(this.div_content);
         //console.log("update display 2", this.id, this.children.length, local_div);
         var max_len = this.children.length;
         if( max_len > this.cluster_max_show ) { max_len = this.cluster_max_show;}
-        //div.appendChild(document.createTextNode("children"))
+        //local_div.appendChild(document.createTextNode("children"))
         for(idx=0;idx<max_len;idx++){
             local_div.appendChild(this.children[idx].div_content)
         }
-        //console.log(div)
+        //console.log(local_div)
         if( this.children.length > this.cluster_max_show ) { 
             //console.log(this.id, "children length > 3");
-            local_div.appendChild(document.createElement("div").appendChild(document.createTextNode("...(+" + String( this.children.length-max_len)+")"))); 
+            var more_div = document.createElement("div");
+            more_div.style.fontSize = '12px';
+            more_div.appendChild(document.createTextNode("...(+" + String( this.children.length-max_len)+")"))
+            local_div.appendChild(more_div); 
         }
         //console.log("update display 3", this.id, this.children.length, this.div_content, local_div);
+        //console.log("update cluster display:", this.infowindow_instance.getContent(), local_div);
         this.infowindow_instance.setContent(local_div);
+        //console.log("update cluster display:", this.infowindow_instance.getContent(), local_div);
+        //console.log("update display 4", this.id, this.children.length, this.div_content, local_div);
     }
     set_display(a_finid, a_date){
         //return
