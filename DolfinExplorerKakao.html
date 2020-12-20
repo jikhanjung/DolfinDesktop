@@ -25,8 +25,8 @@
 	<script type="text/javascript" src="jquery-3.5.1.min.js"></script>
 	<script type="text/javascript" src="http://dapi.kakao.com/v2/maps/sdk.js?appkey=d77a7932b44514f9642821b2c24b2b50"></script>
 	<!--script type="text/javascript" src="dolfinid_data.js"></script-->
-	<script type="text/javascript" src="dolfinid_image_data.js"></script>
-	<script type="text/javascript" src="dolfinid_occurrence.js"></script>
+	<script type="text/javascript" src="dolfinid_occurrence_data.js"></script>
+	<script type="text/javascript" src="dolfinid_occurrence_class.js"></script>
 	<!--script type="text/javascript" src="https://unpkg.com/vis-timeline@latest/standalone/umd/vis-timeline-graph2d.min.js"></script-->
 	<!--link href="https://unpkg.com/vis-timeline@latest/styles/vis-timeline-graph2d.min.css" rel="stylesheet" type="text/css" /-->
 	<style type="text/css">
@@ -65,7 +65,7 @@ map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT);
 
 var lat_sum=0, lon_sum=0, data_count=0;
 
-var imagename_list = Object.keys(dolfinid_image_data);
+var imagename_list = Object.keys(dolfinid_occurrence_data);
 //imagename_list.sort()
 
 var marker_hash = {};
@@ -77,13 +77,13 @@ var date_list = [];
 
 for(var image_index=0;image_index<imagename_list.length;image_index++){
 	image_name = imagename_list[image_index]
-	var image_data = dolfinid_image_data[image_name];
+	var occurrence_data = dolfinid_occurrence_data[image_name];
 	var marker_list = [];
 	//add_new_finid(fin_id);
 
-	if( image_data['latitude'] > 0 ){
-		var lat = image_data['latitude'];
-		var lon = image_data['longitude'];
+	if( occurrence_data['latitude'] > 0 ){
+		var lat = occurrence_data['latitude'];
+		var lon = occurrence_data['longitude'];
 		var marker_pos  = new kakao.maps.LatLng(lat, lon);
 
 		location_key = lat + '_' + lon;
@@ -104,22 +104,22 @@ for(var image_index=0;image_index<imagename_list.length;image_index++){
 			//console.log(id,image_name);
 		}
 		// 새로운 날짜일 경우 date_hash 에 location_key 추가.
-		var occur_date = image_data['image_date'];
+		var occur_date = occurrence_data['image_date'];
 		//console.log( image_data);
 		//yyyymmdd = date_array[0]
 		date_list = Object.keys(date_finid_hash);
 		if( !date_list.includes(occur_date) ){
 			date_finid_hash[occur_date] = {}; //list[date_list.length] = current_date;
 		}
-		for(var idx=0;idx<image_data['finid_list'].length;idx++){
-			var l_finid = image_data['finid_list'][idx];
+		for(var idx=0;idx<occurrence_data['finid_list'].length;idx++){
+			var l_finid = occurrence_data['finid_list'][idx];
 			if(!Object.keys(date_finid_hash[occur_date]).includes(l_finid)) {
 				date_finid_hash[occur_date][l_finid] = [];
 			}
 			var occ_list = date_finid_hash[occur_date][l_finid];
 			occ_list[occ_list.length] = occurrence_hash[location_key];
 		}
-		occurrence_hash[location_key].add_image_data(image_name,image_data);
+		occurrence_hash[location_key].add_occurrence_data(image_name,occurrence_data);
 		//occurrence_hash[location_key].update_content();
 	}
 }

@@ -1,6 +1,6 @@
-var dolfinid_image_data = {
+var dolfinid_occurrence_data = {
     "DSC_7036.JPG": {
-        "image_date": "2016-03-16",
+        "image_date": "2016-03-15",
         "image_time": "14:48:54",
         "latitude": 33.24582,
         "longitude": 126.20439,

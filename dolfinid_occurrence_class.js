@@ -29,7 +29,7 @@ class dolfin_occurrence {
         this.longitude = longitude;
         this.occurrence_data = {};
         this.occurrence_list = [];
-        this.image_data_hash = {};
+        this.occurrence_data_hash = {};
         this.finid_list = [];
         this.display_hash = {};
         this.display_row = 0;
@@ -78,15 +78,15 @@ class dolfin_occurrence {
         this.infowindow_instance.setMap(null);
         this.custom_overlay_instance.setMap(this.map);
     }
-    add_image_data(image_name,image_data){
+    add_occurrence_data(image_name,occurrence_data){
         //console.log("add data", this.id, image_name)
-        if(!Object.keys(this.image_data_hash).includes(image_name)){
-            this.image_data_hash[image_name] = image_data;
+        if(!Object.keys(this.occurrence_data_hash).includes(image_name)){
+            this.occurrence_data_hash[image_name] = occurrence_data;
         }
-        var l_date = image_data['image_date'];
-        var l_time = image_data['image_time'];
-        for(var idx=0;idx<image_data['finid_list'].length;idx++){
-            this.occurrence_list[this.occurrence_list.length] = [ image_name, l_date, l_time, image_data['finid_list'][idx] ];
+        var l_date = occurrence_data['image_date'];
+        var l_time = occurrence_data['image_time'];
+        for(var idx=0;idx<occurrence_data['finid_list'].length;idx++){
+            this.occurrence_list[this.occurrence_list.length] = [ image_name, l_date, l_time, occurrence_data['finid_list'][idx] ];
         }
         this.custom_overlay_instance.setContent('<div style="font-size:12px; background-color: rgba(255, 255, 255, 0.6);">'+l_date+'</div>');
     }

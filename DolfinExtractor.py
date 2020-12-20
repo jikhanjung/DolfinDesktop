@@ -19,7 +19,7 @@ from DolfinRecord import DolfinRecord
 form_class = uic.loadUiType("DolfinExtractor.ui")[0]
 
 PROGRAM_NAME = "DolfinExtractor"
-PROGRAM_VERSION = "0.0.1"
+PROGRAM_VERSION = "0.0.2"
 
 class DolfinExtractorWindow(QMainWindow, form_class):
     '''
@@ -190,11 +190,11 @@ class DolfinExtractorWindow(QMainWindow, form_class):
                         occurrence_hash[image_name]['finid_list'].append(finid)
 
 
-        json_object = "var dolfinid_image_data = " + json.dumps(occurrence_hash, indent = 4) + ";"
+        json_object = "var dolfinid_occurrence_data = " + json.dumps(occurrence_hash, indent = 4) + ";"
         #print( lat_min, lat_max, lon_min, lon_max )
         #print(json_object)
 
-        with open("dolfinid_image_data.js", 'w', newline='', encoding='utf-8') as jsfile:
+        with open("dolfinid_occurrence_data.js", 'w', newline='', encoding='utf-8') as jsfile:
             jsfile.write(json_object)
         jsfile.close()
         QApplication.restoreOverrideCursor()
