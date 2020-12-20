@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import QTableWidgetItem, QMainWindow, QHeaderView, QFileDia
                             QWidget, QHBoxLayout, QApplication
 from PyQt5 import uic
 from PyQt5.QtGui import QIcon, QImageReader, QPixmap
-from PyQt5.QtCore import Qt, QBuffer, QIODevice, QByteArray
+from PyQt5.QtCore import Qt, QBuffer, QIODevice
 
 from DolfinRecord import DolfinRecord
 
@@ -155,7 +155,7 @@ class DolfinExtractorWindow(QMainWindow, form_class):
         """
         QApplication.setOverrideCursor(Qt.WaitCursor)
         occurrence_hash = {}
-        lat_min, lon_min, lat_max, lon_max = 999,999,0,0
+        #lat_min, lon_min, lat_max, lon_max = 999,999,0,0
         for current_path in self.path_list:
             csv_path = current_path.joinpath( current_path.name + ".csv" )
             #icondb_path = p.joinpath( p.name + ".icondb" )
@@ -177,22 +177,24 @@ class DolfinExtractorWindow(QMainWindow, form_class):
 
                         image_name = fin_record.image_name
                         image_datetime = fin_record.image_datetime
+                        image_date, image_time = image_datetime.split(" ")
                         lat, lon = fin_record.get_decimal_latitude_longitude()
                         finid = fin_record.dolfin_id
 
                         if image_name not in occurrence_hash.keys():
-                            occurrence_hash[image_name] = {'datetime': image_datetime,
+                            occurrence_hash[image_name] = {'image_date': image_date,
+                                                           'image_time': image_time,
                                                            'latitude': lat, 'longitude': lon,
                                                            'finid_list': []}
 
                         occurrence_hash[image_name]['finid_list'].append(finid)
 
 
-        json_object = "var dolfin_occurrence_hash = " + json.dumps(occurrence_hash, indent = 4) + ";"
+        json_object = "var dolfinid_image_data = " + json.dumps(occurrence_hash, indent = 4) + ";"
         #print( lat_min, lat_max, lon_min, lon_max )
         #print(json_object)
 
-        with open("dolfin_occurrence_data.js", 'w', newline='', encoding='utf-8') as jsfile:
+        with open("dolfinid_image_data.js", 'w', newline='', encoding='utf-8') as jsfile:
             jsfile.write(json_object)
         jsfile.close()
         QApplication.restoreOverrideCursor()
