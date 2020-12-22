@@ -59,6 +59,7 @@ var options = {
 };
 
 var map = new kakao.maps.Map(container, options);
+var GlobalMap = map;
 var bounds = new kakao.maps.LatLngBounds();
 var zoomControl = new kakao.maps.ZoomControl();
 map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT);
@@ -165,7 +166,13 @@ function makeOutListener(occ) {
 
 function makeClickListener(occ) {
     return function() {
-		occ.toggle_sticky();//infowindow_instance.close();
+		var zoom_level = GlobalMap.getLevel();
+		//console.log("zoom level:",);
+		if(zoom_level == 1 && occ.children.length > 0 ){
+			occ.spread_children();//infowindow_instance.close();
+		} else {
+			occ.toggle_sticky();//infowindow_instance.close();
+		}
     };
 }
 
