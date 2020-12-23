@@ -499,7 +499,7 @@ class DolfinDetectorWindow(QMainWindow, form_class) :
         return
 
     def btnWeightsFunction(self):
-        weights_filename = QFileDialog.getOpenFileName(self, 'Select Weights File', './', '*.pt')
+        weights_filename, opt = QFileDialog.getOpenFileName(self, 'Select Weights File', './', '*.pt')
         #print( weights_filename )
         #return
 
