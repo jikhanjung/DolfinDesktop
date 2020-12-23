@@ -118,6 +118,12 @@ class dolfin_occurrence {
     toggle_sticky() {
         this.sticky = !this.sticky;
     }
+    spread_children() {
+        // save for later use
+        //console.log("spread children");
+
+        this.toggle_sticky();
+    }
     set_visible( visible_true ){
         if( visible_true ) {
             this.set_map(map);
@@ -170,32 +176,6 @@ class dolfin_occurrence {
         this.infowindow_instance.setContent(local_div);
         //console.log("update cluster display:", this.infowindow_instance.getContent(), local_div);
         //console.log("update display 4", this.id, this.children.length, this.div_content, local_div);
-    }
-    set_display(a_finid, a_date){
-        //return
-        //display_hash = this.display_hash;
-        //console.log(this, this.display_hash);
-        key_list = Object.keys(this.display_hash);
-        //console.log(key_list);
-        if(!(key_list.includes(a_finid))){
-            this.display_hash[a_finid] = [];
-        }
-        if(!(this.display_hash[a_finid].includes(a_date))){
-            this.display_hash[a_finid][this.display_hash[a_finid].length] = a_date;
-            this.display_hash[a_finid].sort();
-        }
-	    var div_element = document.createElement('div');
-        var finid_list = Object.keys(this.display_hash);
-        var div_text_list = [];
-        finid_list.sort();
-        for(idx=0;idx<finid_list.length;idx++){
-            var date_list = this.display_hash[finid_list[idx]];
-            var date_text = date_list.join(", ");
-            var tn = document.createTextNode(finid_list[idx] + "(" + date_text + ")<br/>");
-            div_element.appendChild(tn);
-        }
-        this.div_content = div_element;
-        this.infowindow_instance.setContent(div_element);
     }
     distance(lat1, lon1, lat2, lon2 ) {
         if ((lat1 == lat2) && (lon1 == lon2)) {
