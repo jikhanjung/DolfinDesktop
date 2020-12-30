@@ -11,7 +11,7 @@ import pickle
 from PyQt5.QtWidgets import QTableWidgetItem, QMainWindow, QHeaderView, QFileDialog, QCheckBox, \
                             QWidget, QHBoxLayout, QApplication
 from PyQt5 import uic
-from PyQt5.QtGui import QIcon, QImageReader, QPixmap
+from PyQt5.QtGui import QIcon, QImageReader, QPixmap, QPainter
 from PyQt5.QtCore import Qt, QBuffer, QIODevice
 
 from DolfinRecord import DolfinRecord
@@ -94,6 +94,9 @@ class DolfinExtractorWindow(QMainWindow, form_class):
         dir_list = [f for f in os.listdir(str(self.working_folder))]
 
         current_row = 0
+        finid_sum = 0
+        row_sum = 0
+        image_sum = 0
         for item in dir_list:
             #print(item)
             full_path = self.working_folder.joinpath(item)
@@ -102,7 +105,7 @@ class DolfinExtractorWindow(QMainWindow, form_class):
                 csv_path = full_path.joinpath( full_path.name + ".csv" )
                 #icondb_path = full_path.joinpath( full_path.name + ".icondb" )
                 #finicon_hash = load_and_unpickle_image_hash( icondb_path )
-                #print( csv_path )
+                print( csv_path )
 
                 if csv_path.exists():
                     self.path_list.append(full_path)
@@ -112,14 +115,17 @@ class DolfinExtractorWindow(QMainWindow, form_class):
                         finid_count = 0
                         for row in reader:
                             row_count += 1
+                            row_sum += 1
                             image_name = row['image_name']
                             if image_name not in image_name_list:
                                 image_name_list.append(image_name)
                             fin_record  = DolfinRecord( row )
                             if fin_record.dolfin_id != '':
                                 finid_count += 1
+                                finid_sum += 1
 
                     image_count = len(image_name_list)
+                    image_sum += image_count
                     table_row_count = self.tblSubfolders.rowCount()
                     checkbox = QCheckBox()
                     checkbox.setChecked(True)
@@ -146,6 +152,24 @@ class DolfinExtractorWindow(QMainWindow, form_class):
                     self.tblSubfolders.setItem(current_row, 4, item4)
                     current_row += 1
 
+        table_row_count = self.tblSubfolders.rowCount()
+        item0 = QTableWidgetItem( "" )
+        item1 = QTableWidgetItem( "Total" )
+        item1.setTextAlignment(int(Qt.AlignCenter|Qt.AlignVCenter))
+        item2 = QTableWidgetItem(str(finid_sum))
+        item2.setTextAlignment(int(Qt.AlignRight|Qt.AlignVCenter))
+        item3 = QTableWidgetItem(str(row_sum))
+        item3.setTextAlignment(int(Qt.AlignRight|Qt.AlignVCenter))
+        item4 = QTableWidgetItem(str(image_sum))
+        item4.setTextAlignment(int(Qt.AlignRight|Qt.AlignVCenter))
+        self.tblSubfolders.insertRow(table_row_count)
+        #self.checkbox_list.append(checkbox)
+        self.tblSubfolders.setItem(current_row, 0, item0)
+        self.tblSubfolders.setItem(current_row, 1, item1)
+        self.tblSubfolders.setItem(current_row, 2, item2)
+        self.tblSubfolders.setItem(current_row, 3, item3)
+        self.tblSubfolders.setItem(current_row, 4, item4)
+
 
         QApplication.restoreOverrideCursor()
 
@@ -156,13 +180,16 @@ class DolfinExtractorWindow(QMainWindow, form_class):
         QApplication.setOverrideCursor(Qt.WaitCursor)
         occurrence_hash = {}
         #lat_min, lon_min, lat_max, lon_max = 999,999,0,0
+        path_index = 0
         for current_path in self.path_list:
             csv_path = current_path.joinpath( current_path.name + ".csv" )
-            #icondb_path = p.joinpath( p.name + ".icondb" )
-            #finicon_hash = load_and_unpickle_image_hash( icondb_path )
             #print( csv_path )
 
-            if csv_path.exists():
+            #icondb_path = p.joinpath( p.name + ".icondb" )
+            #finicon_hash = load_and_unpickle_image_hash( icondb_path )
+
+            if self.checkbox_list[path_index].isChecked() and csv_path.exists():
+                print( csv_path )
 
                 with open(str(csv_path), newline='', encoding='utf-8') as csvfile:
                     reader = csv.DictReader(csvfile)
@@ -188,6 +215,7 @@ class DolfinExtractorWindow(QMainWindow, form_class):
                                                            'finid_list': []}
 
                         occurrence_hash[image_name]['finid_list'].append(finid)
+            path_index += 1
 
 
         json_object = "var dolfinid_occurrence_data = " + json.dumps(occurrence_hash, indent = 4) + ";"
@@ -222,24 +250,46 @@ class DolfinExtractorWindow(QMainWindow, form_class):
         finid_hash = {}
         finid_folder = "./finid_images"
         finid_basepath = Path(finid_folder)
-        
+        path_index = 0
+
         for current_path in self.path_list:
             csv_path = current_path.joinpath( current_path.name + ".csv" )
             icondb_path = current_path.joinpath( current_path.name + ".icondb" )
             finicon_hash = self.load_and_unpickle_image_hash( icondb_path )
             #print( csv_path )
 
-            if csv_path.exists():
+            #if csv_path.exists():
+            if self.checkbox_list[path_index].isChecked() and csv_path.exists():
+                print( csv_path )
 
                 with open(str(csv_path), newline='', encoding='utf-8') as csvfile:
                     reader = csv.DictReader(csvfile)
 
-                    #prev_image_name = ''
+                    prev_image_name = ''
 
                     for row in reader:
                         fin_record  = DolfinRecord( row )
                         if fin_record.dolfin_id == '':
                             continue
+
+                        image_name = fin_record.image_name
+                        image_path = current_path.joinpath(image_name)
+
+                        if image_name != prev_image_name:
+                            pixmap = None
+                            prev_image_name = image_name
+                            #i += 1
+                            #label_text = "Processing {} of {} image files...".format(i, len(images))
+                            #self.progress_dialog.pb_progress.setValue(int((i/float(len(images)))*100))
+                            #self.progress_dialog.lbl_text.setText(label_text)
+                            #self.progress_dialog.update()
+                            #QApplication.processEvents()
+
+
+                        if pixmap is None:
+                            pixmap = QPixmap(str(image_path))
+                        cropped_pixmap = self.get_cropped_fin_image(pixmap, fin_record, True)
+                        scaled_pixmap = cropped_pixmap.scaledToWidth(224)
                         
                         finid = fin_record.dolfin_id
                         if finid not in finid_hash.keys():
@@ -255,13 +305,71 @@ class DolfinExtractorWindow(QMainWindow, form_class):
                         finid_filename = "{}_{}.JPG".format(yyyymmdd, fin_record.get_finname()) 
 
                         finid_filepath = finid_path.joinpath(finid_filename)
-                        icon_pixmap = QPixmap(finicon_hash[fin_record.get_finname()])
-                        print(finid_filepath)
-                        fin_img = icon_pixmap.toImage()
+                        #icon_pixmap = QPixmap(finicon_hash[fin_record.get_finname()])
+                        #print(finid_filepath)
+                        short_filepath = Path(finid).joinpath(finid_filename)
+
+                        fin_img = scaled_pixmap.toImage()
                         fin_img.save(str(finid_filepath))
+                        finid_hash[finid].append(short_filepath)
+            path_index += 1
+ 
+        csv_path = "./finid_images/dolfinid.csv"
+        with open(str(csv_path), 'w', newline='', encoding='utf-8') as csvfile:
+            for k in finid_hash.keys():
+                for filepath in finid_hash[k]:
+                    csvfile.write(",".join([k, str(filepath.as_posix())]))
+                    csvfile.write("\n")
+        #csvfile.close()
+
 
         QApplication.restoreOverrideCursor()        
 
+    def get_cropped_fin_image(self, pixmap, fin_record, square=True):
+
+        orig_pixmap = pixmap #self.orig_pixmap_list[image_index]
+        orig_width = orig_pixmap.size().width()
+        orig_height = orig_pixmap.size().height()
+        finbbox = {}
+        finview = {}
+
+        if fin_record.confidence > 0:
+            cls, center_x, center_y, fin_width, fin_height, conf = fin_record.get_detection_info()
+
+            finbbox['width'] = int(fin_width * orig_width)
+            finbbox['height'] = int(fin_height * orig_height)
+            #print("fin bbox", finbbox)
+            if square:
+                finbbox['width'] = max(int(fin_width*orig_width), int(fin_height*orig_height))
+                finbbox['height'] = finbbox['width']
+            #print("fin bbox", finbbox)
+            finbbox['x1'] = int(center_x * orig_width - (finbbox['width'] / 2))
+            finbbox['y1'] = int(center_y * orig_height - (finbbox['height']  / 2))
+            #print("fin bbox", finbbox)
+            finbbox['x2'] = finbbox['x1'] + finbbox['width']
+            finbbox['y2'] = finbbox['y1'] + finbbox['height']
+            #print("finbbox", finbbox)
+            #print("fin bbox", finbbox)
+
+            finview['width'] = finbbox['width']
+            finview['height'] = finbbox['height']
+            finview['x1'] = max(int(center_x * orig_width  - (finview['width']  / 2)), 0)
+            finview['y1'] = max(int(center_y * orig_height - (finview['height'] / 2)), 0)
+            finview['x2'] = finview['x1'] + finview['width']
+            finview['y2'] = finview['y1'] + finview['height']
+
+        cropped_pixmap = orig_pixmap.copy(finview['x1'], finview['y1'], finview['width'], finview['height'])
+        p_width, p_height = cropped_pixmap.width(), cropped_pixmap.height()
+
+        if square and p_width != p_height:
+            p_size = max(p_width, p_height)
+            empty_pixmap = QPixmap(p_size, p_size)
+            empty_pixmap.fill(Qt.gray)
+            l_painter = QPainter(empty_pixmap)
+            l_painter.drawPixmap(cropped_pixmap.rect(), cropped_pixmap)
+            cropped_pixmap = empty_pixmap
+
+        return cropped_pixmap
 
 
 if __name__ == "__main__":
