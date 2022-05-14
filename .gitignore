@@ -22,3 +22,5 @@ finid_images/
 finid_images_old/
 DolfinExtractor.spec
 finid_images_20201230/
+dolfinid.db
+output.log
