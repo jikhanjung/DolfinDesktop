@@ -1,7 +1,8 @@
 from PyQt5.QtWidgets import QTableWidgetItem, QMainWindow, QHeaderView, QFileDialog, QCheckBox, \
                             QWidget, QHBoxLayout, QVBoxLayout, QProgressBar, QApplication, \
                             QDialog, QLineEdit, QLabel, QPushButton, QAbstractItemView, \
-                            QMessageBox, QListView, QTreeWidgetItem, QToolButton, QTreeView, QFileSystemModel
+                            QMessageBox, QListView, QTreeWidgetItem, QToolButton, QTreeView, QFileSystemModel, \
+                            QTableView
 
 from PyQt5 import uic
 from PyQt5.QtGui import QIcon, QColor, QPainter, QPen, QPixmap, QStandardItemModel, QStandardItem,\
@@ -14,6 +15,7 @@ from pathlib import Path
 from peewee import *
 import hashlib
 from datetime import datetime, timezone
+import requests
 
 PROGRAM_NAME = "DolfinID"
 PROGRAM_VERSION = "0.0.1"
@@ -156,6 +158,7 @@ class DolfinIDWindow(QMainWindow, form_class):
 
         self.pushButton.clicked.connect(self.pushButtonClicked)
         self.pushButton_2.clicked.connect(self.pushButton2Clicked)
+        self.pushButton_3.clicked.connect(self.pushButton3Clicked)
         #self.data_folder = Path('.')
         self.dir_model = QStandardItemModel()
         self.file_model = QStandardItemModel()
@@ -164,18 +167,39 @@ class DolfinIDWindow(QMainWindow, form_class):
         self.proxy_model = QSortFilterProxyModel()
         self.proxy_model.setSourceModel(self.file_model)
         self.listView.setModel(self.proxy_model)
+        self.tableView.setModel(self.proxy_model)
+        self.tableView.setSelectionBehavior(QTableView.SelectRows)
+        self.tableView.hideColumn(1)
+        #self.tableView.hideColumn(1)
 
 
         self.treeView.setHeaderHidden( True )
+        self.tableView.horizontalHeader().hide()
+        self.tableView.verticalHeader().hide()
+
         self.treeView.expandAll()
         #print("__init__ dir model row count:", self.dir_model.rowCount())
         self.dirSelModel = self.treeView.selectionModel()
         self.dirSelModel.selectionChanged.connect(self.dirSelectionChanged)
         self.fileSelModel = self.listView.selectionModel()
         self.fileSelModel.selectionChanged.connect(self.fileSelectionChanged)
+        self.fileSelModel2 = self.tableView.selectionModel()
+        self.fileSelModel2.selectionChanged.connect(self.fileSelectionChanged)
 
         self.dir_record_tree = []
         self.file_record_hash = {}
+        self.dir_list = []
+        self.file_list = []
+
+    def get_hash(self,path, blocksize=65536):
+        afile = open(path, 'rb')
+        hasher = hashlib.md5()
+        buf = afile.read(blocksize)
+        while len(buf) > 0:
+            hasher.update(buf)
+            buf = afile.read(blocksize)
+        afile.close()
+        return hasher.hexdigest()
 
     def fileSelectionChanged(self):
         return
@@ -257,6 +281,52 @@ class DolfinIDWindow(QMainWindow, form_class):
             parentItem.appendRow(item)
             parentItem = item'''
 
+    def upload_file(self):
+        index = self.tableView.currentIndex()
+        print(index)
+
+        selected_index_list = self.fileSelModel2.selection().indexes()
+        if len(selected_index_list) == 0:
+            return
+        print("selected_index",selected_index_list)
+
+        new_index_list = []
+        model = selected_index_list[0].model()
+        if hasattr(model, 'mapToSource'):
+            for index in selected_index_list:
+                new_index = model.mapToSource(index)
+                new_index_list.append(new_index)
+        print("new_index_list",new_index_list)
+        item_text_list = []
+        for index in new_index_list:
+            item = self.file_model.itemFromIndex(index)
+            print("item_text:",item.text())
+            item_text_list.append(item.text())
+        item_text_list.reverse()
+        path = Path(item_text_list[0],item_text_list[1]).resolve()
+        #path = 
+        print(path)
+        hash_val = ''
+
+        if os.path.exists(path):
+            hash_val = self.get_hash(path)
+            print(hash_val)
+        else:
+            return
+        query = {'md5hash':hash_val}
+        response = requests.get("http://127.0.0.1:8000/dolfinrest/md5hash/"+ hash_val)
+        print(response)
+        print(response.json())
+
+
+        
+
+
+
+    def pushButton3Clicked(self):
+        self.upload_file()
+
+
     def pushButton2Clicked(self):
         self.load_dir()
         #self.treeView.hideColumn(2)
@@ -270,33 +340,34 @@ class DolfinIDWindow(QMainWindow, form_class):
         print("checking database", datetime.now())
         dir_hash = {}
         #rec_list = [ self.dir_list, ]
-        for list in [ self.dir_list, self.file_list ]:
-            for f in list:
-                #print(f)
-                fullpath = Path(f[0])
-                #stem = fullpath.stem
-                fname = fullpath.name
-                rec_image = DolfinImageFile.get_or_none( path=str(fullpath) )
-                if not rec_image:
-                    #print("no such record"+str(f)+"\n")
-                    #print(str(dir_hash))
-                    #print(stem)
-                    if str(fullpath.parent) in dir_hash.keys():
-                        parent = dir_hash[str(fullpath.parent)]
-                        #print(fullpath.parent)
+        with db.atomic() as txn:
+            for list in [ self.dir_list, self.file_list ]:
+                for f in list:
+                    #print(f)
+                    fullpath = Path(f[0])
+                    #stem = fullpath.stem
+                    fname = fullpath.name
+                    rec_image = DolfinImageFile.get_or_none( path=str(fullpath) )
+                    if not rec_image:
+                        #print("no such record"+str(f)+"\n")
+                        #print(str(dir_hash))
+                        #print(stem)
+                        if str(fullpath.parent) in dir_hash.keys():
+                            parent = dir_hash[str(fullpath.parent)]
+                            #print(fullpath.parent)
+                        else:
+                            #print("no key")
+                            #print(dir_hash.keys(), fullpath.parent)
+                            parent = None
+                        rec_image = DolfinImageFile(path=f[0],type=f[1],name=fname,file_created=f[2],file_modified=f[3],size=f[4],md5hash='',uploaded=False)
+                        rec_image.parent=parent
+                        rec_image.save()
+                        if f[1] == 'dir':
+                            dir_hash[str(fullpath)] = rec_image
+                            #print(rec_image)
+                            #print(dir_hash)
                     else:
-                        #print("no key")
-                        #print(dir_hash.keys(), fullpath.parent)
-                        parent = None
-                    rec_image = DolfinImageFile(path=f[0],type=f[1],name=fname,file_created=f[2],file_modified=f[3],size=f[4],md5hash='',uploaded=False)
-                    rec_image.parent=parent
-                    rec_image.save()
-                    if f[1] == 'dir':
-                        dir_hash[str(fullpath)] = rec_image
-                        #print(rec_image)
-                        #print(dir_hash)
-                else:
-                    pass
+                        pass
         #fd.writepstr(dir_hash))
         print(dir_hash)
                 #print("already_exist", f)
