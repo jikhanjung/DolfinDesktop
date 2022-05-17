@@ -302,8 +302,10 @@ class DolfinIDWindow(QMainWindow, form_class):
             item = self.file_model.itemFromIndex(index)
             print("item_text:",item.text())
             item_text_list.append(item.text())
-        item_text_list.reverse()
-        path = Path(item_text_list[0],item_text_list[1]).resolve()
+        filepath = item_text_list[1]
+        filename = item_text_list[0]
+        #item_text_list.reverse()
+        path = Path(filepath,filename).resolve()
         #path = 
         print(path)
         hash_val = ''
@@ -313,12 +315,23 @@ class DolfinIDWindow(QMainWindow, form_class):
             print(hash_val)
         else:
             return
-        query = {'md5hash':hash_val}
-        response = requests.get("http://127.0.0.1:8000/dolfinrest/md5hash/"+ hash_val)
+        data_hash = {'title':'test','filepath':filepath,'filename':filename,'md5hash':hash_val}
+
+        fd = open(path, 'rb')
+        file_hash = {'imagefile': fd}   
+        #fields = {'title':'test','filename':item_text_list[1],'md5hash':hash_val,"imagefile": fd}
+        #print(fields)
+
+        post_url = "http://127.0.0.1:8000/dolfinrest/dolfinimage_list/"
+
+        #print(requests.Request('POST', post_url, files=file_hash, data=data_hash).prepare().body)
+        response = requests.post(post_url, files=file_hash,data=data_hash)
+        
         print(response)
         print(response.json())
-
-
+        #log = open("log.txt","w")
+        #log.write(str(response.json()))
+        #log.close()
         
 
 
